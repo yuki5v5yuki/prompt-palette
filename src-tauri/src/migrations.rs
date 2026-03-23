@@ -67,9 +67,6 @@ fn migrate_v2(conn: &Connection) -> rusqlite::Result<()> {
 
 /// V3: Extract variables into reusable packages (variable_packages)
 fn migrate_v3(conn: &Connection) -> rusqlite::Result<()> {
-    // Disable FK checks during migration (we're restructuring tables)
-    conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
-
     conn.execute_batch(
         "
         -- 1. Create variable_packages table
@@ -148,8 +145,6 @@ fn migrate_v3(conn: &Connection) -> rusqlite::Result<()> {
         ALTER TABLE variables_new RENAME TO variables;
 
         CREATE INDEX idx_variables_package ON variables(package_id);
-
-        PRAGMA foreign_keys = ON;
         ",
     )
 }
