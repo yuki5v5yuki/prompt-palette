@@ -286,13 +286,27 @@ export default function Launcher() {
         {formFields.map((field, idx) => (
           <div key={field.key} className="launcher-var-field">
             <label className="launcher-var-label">{field.label}</label>
-            {field.options && field.options.length > 0 ? (
+            {field.options && field.options.length > 0 && !field.allowFreeText ? (
+              <select
+                ref={(el) => { formRefs.current[idx] = el as unknown as HTMLInputElement; }}
+                className="launcher-var-input"
+                value={formValues[field.key] ?? ""}
+                onChange={(e) =>
+                  setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                }
+                onFocus={() => setActiveFieldIndex(idx)}
+              >
+                <option value="">{field.defaultValue ?? ""}</option>
+                {field.options.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            ) : field.options && field.options.length > 0 ? (
               <div className="combobox-wrapper">
                 <input
                   ref={(el) => { formRefs.current[idx] = el; }}
                   type="text"
                   className="launcher-var-input"
-                  list={`datalist-${field.key}`}
                   value={formValues[field.key] ?? ""}
                   onChange={(e) =>
                     setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
@@ -300,11 +314,21 @@ export default function Launcher() {
                   onFocus={() => setActiveFieldIndex(idx)}
                   placeholder={field.defaultValue ?? ""}
                 />
-                <datalist id={`datalist-${field.key}`}>
+                <div className="launcher-option-list">
                   {field.options.map((opt) => (
-                    <option key={opt} value={opt} />
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`launcher-option-item ${formValues[field.key] === opt ? "selected" : ""}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setFormValues((prev) => ({ ...prev, [field.key]: opt }));
+                      }}
+                    >
+                      {opt}
+                    </button>
                   ))}
-                </datalist>
+                </div>
               </div>
             ) : (
               <input

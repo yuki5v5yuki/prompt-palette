@@ -67,6 +67,10 @@
     "preview": "Preview",
     "builtinVars": "Built-in variables",
     "saveFirst": "Save template first to add custom variables",
+    "detailSettings": "Variable Details",
+    "detailSettingsHint": "Set default values and options",
+    "addOption": "Add option",
+    "allowFreeText": "Allow free text input",
     "placeholder": {
       "key": "e.g. customer_name",
       "label": "e.g. Customer Name",

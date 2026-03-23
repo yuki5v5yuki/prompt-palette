@@ -67,6 +67,10 @@
     "preview": "プレビュー",
     "builtinVars": "組み込み変数",
     "saveFirst": "カスタム変数を追加するには、先にテンプレートを保存してください",
+    "detailSettings": "変数の詳細設定",
+    "detailSettingsHint": "デフォルト値や選択肢を設定できます",
+    "addOption": "選択肢を追加",
+    "allowFreeText": "フリーテキストの入力も許可する",
     "placeholder": {
       "key": "例: customer_name",
       "label": "例: お客様名",

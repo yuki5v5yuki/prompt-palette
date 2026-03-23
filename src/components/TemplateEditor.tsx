@@ -40,7 +40,8 @@ export default function TemplateEditor({
   const [varKey, setVarKey] = useState("");
   const [varLabel, setVarLabel] = useState("");
   const [varDefault, setVarDefault] = useState("");
-  const [varOptions, setVarOptions] = useState("");
+  const [varOptionsList, setVarOptionsList] = useState<string[]>([]);
+  const [varAllowFreeText, setVarAllowFreeText] = useState(true);
 
   // Quick add
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -102,7 +103,8 @@ export default function TemplateEditor({
     setVarKey("");
     setVarLabel("");
     setVarDefault("");
-    setVarOptions("");
+    setVarOptionsList([]);
+    setVarAllowFreeText(true);
     setEditingVar(null);
     setShowVarEditor(false);
   };
@@ -110,9 +112,8 @@ export default function TemplateEditor({
   const handleSaveVariable = async () => {
     if (!varKey.trim() || !template?.id) return;
 
-    const optionsArray = varOptions.trim()
-      ? varOptions.split(",").map((s) => s.trim()).filter(Boolean)
-      : undefined;
+    const filteredOptions = varOptionsList.map((s) => s.trim()).filter(Boolean);
+    const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
 
     if (editingVar) {
       await updateVariable(editingVar.id, {
@@ -120,6 +121,7 @@ export default function TemplateEditor({
         label: varLabel.trim() || varKey.trim(),
         defaultValue: varDefault.trim() || undefined,
         options: optionsArray,
+        allowFreeText: varAllowFreeText,
       });
     } else {
       await createVariable({
@@ -128,6 +130,7 @@ export default function TemplateEditor({
         label: varLabel.trim() || varKey.trim(),
         defaultValue: varDefault.trim() || undefined,
         options: optionsArray,
+        allowFreeText: varAllowFreeText,
       });
     }
     resetVarForm();
@@ -139,7 +142,8 @@ export default function TemplateEditor({
     setVarKey(v.key);
     setVarLabel(v.label);
     setVarDefault(v.defaultValue ?? "");
-    setVarOptions(v.options?.join(", ") ?? "");
+    setVarOptionsList(v.options ?? []);
+    setVarAllowFreeText(v.allowFreeText);
     setShowVarEditor(true);
   };
 
@@ -377,108 +381,97 @@ export default function TemplateEditor({
         </div>
       </div>
 
-      {/* Variable Management Section - only visible when editing */}
-      {isEditing && template && (
-        <div className="form-group variable-section">
-          <div className="variable-section-header">
-            <label className="form-label">{t("variable.title")}</label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => { resetVarForm(); setShowVarEditor(true); }}
-            >
-              + {t("variable.addVariable")}
-            </button>
+      {/* Variable Detail Settings - collapsible, only when editing & variables exist */}
+      {isEditing && template && variables.length > 0 && (
+        <details className="variable-details">
+          <summary className="variable-details-summary">
+            {t("variable.detailSettings")}
+            <span className="variable-details-hint">{t("variable.detailSettingsHint")}</span>
+          </summary>
+          <div className="variable-details-content">
+            {variables.map((v) => (
+              <div key={v.id} className="variable-card">
+                <div className="variable-card-header" onClick={() => editingVar?.id === v.id ? resetVarForm() : handleEditVariable(v)}>
+                  <span className="variable-chip variable-chip-static">{v.key}</span>
+                  <span className="variable-card-label">{v.label}</span>
+                  {v.defaultValue && <span className="variable-card-meta">{v.defaultValue}</span>}
+                  {v.options && v.options.length > 0 && <span className="variable-card-meta">{v.options.join(", ")}</span>}
+                  <span className="variable-card-toggle">{editingVar?.id === v.id ? "▲" : "▼"}</span>
+                </div>
+                {editingVar?.id === v.id && (
+                  <div className="variable-card-body">
+                    <div className="form-row">
+                      <div className="form-group form-group-half">
+                        <label className="form-label">{t("variable.labelLabel")}</label>
+                        <input type="text" className="form-input" value={varLabel} onChange={(e) => setVarLabel(e.target.value)} placeholder={t("variable.placeholder.label")} />
+                      </div>
+                      <div className="form-group form-group-half">
+                        <label className="form-label">{t("variable.defaultLabel")}</label>
+                        <input type="text" className="form-input" value={varDefault} onChange={(e) => setVarDefault(e.target.value)} placeholder={t("variable.placeholder.default")} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">{t("variable.optionsLabel")}</label>
+                      <div className="option-list">
+                        {varOptionsList.map((opt, idx) => (
+                          <div key={idx} className="option-item">
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={opt}
+                              onChange={(e) => {
+                                const next = [...varOptionsList];
+                                next[idx] = e.target.value;
+                                setVarOptionsList(next);
+                              }}
+                              placeholder={`${t("variable.optionsLabel")} ${idx + 1}`}
+                            />
+                            <button
+                              type="button"
+                              className="btn-icon btn-icon-danger"
+                              onClick={() => setVarOptionsList(varOptionsList.filter((_, i) => i !== idx))}
+                              title={t("common.delete")}
+                            >
+                              x
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="option-add-btn"
+                          onClick={() => setVarOptionsList([...varOptionsList, ""])}
+                        >
+                          + {t("variable.addOption")}
+                        </button>
+                      </div>
+                    </div>
+                    <label className="option-freetext-check">
+                      <input
+                        type="checkbox"
+                        checked={varAllowFreeText}
+                        onChange={(e) => setVarAllowFreeText(e.target.checked)}
+                      />
+                      {t("variable.allowFreeText")}
+                    </label>
+                    <div className="variable-card-actions">
+                      <button type="button" className="btn btn-danger btn-xs" onClick={() => handleDeleteVariable(v.id)}>
+                        {t("common.delete")}
+                      </button>
+                      <div>
+                        <button type="button" className="btn btn-secondary btn-xs" onClick={resetVarForm}>
+                          {t("common.cancel")}
+                        </button>
+                        <button type="button" className="btn btn-primary btn-xs" onClick={handleSaveVariable} style={{ marginLeft: 6 }}>
+                          {t("common.save")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-
-          {variables.length > 0 && (
-            <div className="variable-list">
-              {variables.map((v) => (
-                <div key={v.id} className="variable-item">
-                  <div className="variable-item-info">
-                    <span className="variable-key">{`{{${v.key}}}`}</span>
-                    <span className="variable-label">{v.label}</span>
-                    {v.defaultValue && (
-                      <span className="variable-default">{t("variable.default")}: {v.defaultValue}</span>
-                    )}
-                    {v.options && v.options.length > 0 && (
-                      <span className="variable-options">{t("variable.options")}: {v.options.join(", ")}</span>
-                    )}
-                  </div>
-                  <div className="variable-item-actions">
-                    <button type="button" className="btn-icon" onClick={() => handleEditVariable(v)}>
-                      {t("common.edit")}
-                    </button>
-                    <button type="button" className="btn-icon btn-icon-danger" onClick={() => handleDeleteVariable(v.id)}>
-                      {t("common.delete")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {variables.length === 0 && !showVarEditor && (
-            <p className="variable-empty">{t("variable.empty")}</p>
-          )}
-
-          {showVarEditor && (
-            <div className="variable-editor">
-              <div className="form-row">
-                <div className="form-group form-group-half">
-                  <label className="form-label">{t("variable.keyLabel")}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={varKey}
-                    onChange={(e) => setVarKey(e.target.value)}
-                    placeholder={t("variable.placeholder.key")}
-                  />
-                </div>
-                <div className="form-group form-group-half">
-                  <label className="form-label">{t("variable.labelLabel")}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={varLabel}
-                    onChange={(e) => setVarLabel(e.target.value)}
-                    placeholder={t("variable.placeholder.label")}
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group form-group-half">
-                  <label className="form-label">{t("variable.defaultLabel")}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={varDefault}
-                    onChange={(e) => setVarDefault(e.target.value)}
-                    placeholder={t("variable.placeholder.default")}
-                  />
-                </div>
-                <div className="form-group form-group-half">
-                  <label className="form-label">{t("variable.optionsLabel")}</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={varOptions}
-                    onChange={(e) => setVarOptions(e.target.value)}
-                    placeholder={t("variable.placeholder.options")}
-                  />
-                </div>
-              </div>
-              <div className="variable-editor-actions">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={resetVarForm}>
-                  {t("common.cancel")}
-                </button>
-                <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveVariable}>
-                  {t("common.save")}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        </details>
       )}
 
       {isEditing && template && (

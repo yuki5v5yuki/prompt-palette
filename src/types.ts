@@ -43,6 +43,7 @@ export interface Variable {
   defaultValue: string | null;
   options: string[] | null;
   sortOrder: number;
+  allowFreeText: boolean;
 }
 
 // --- Input types ---
@@ -90,6 +91,7 @@ export interface CreateVariableInput {
   defaultValue?: string;
   options?: string[];
   sortOrder?: number;
+  allowFreeText?: boolean;
 }
 
 export interface UpdateVariableInput {
@@ -98,6 +100,7 @@ export interface UpdateVariableInput {
   defaultValue?: string;
   options?: string[];
   sortOrder?: number;
+  allowFreeText?: boolean;
 }
 
 export interface VariableFormField {
@@ -106,6 +109,7 @@ export interface VariableFormField {
   defaultValue: string | null;
   options: string[] | null;
   isBuiltin: boolean;
+  allowFreeText: boolean;
 }
 
 export interface InterpolateRequest {

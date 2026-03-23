@@ -2,7 +2,7 @@ use rusqlite::Connection;
 
 /// All migrations in order. Each function upgrades from version N-1 to N.
 pub fn get_migrations() -> Vec<fn(&Connection) -> rusqlite::Result<()>> {
-    vec![migrate_v1]
+    vec![migrate_v1, migrate_v2]
 }
 
 /// V1: Initial schema — 5 data tables + schema_version
@@ -55,5 +55,12 @@ fn migrate_v1(conn: &Connection) -> rusqlite::Result<()> {
         CREATE INDEX idx_variables_template ON variables(template_id);
         CREATE INDEX idx_template_tags_tag ON template_tags(tag_id);
         ",
+    )
+}
+
+/// V2: Add allow_free_text column to variables
+fn migrate_v2(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "ALTER TABLE variables ADD COLUMN allow_free_text INTEGER NOT NULL DEFAULT 1;",
     )
 }

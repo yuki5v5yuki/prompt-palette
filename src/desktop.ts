@@ -37,7 +37,8 @@ const invokeCommand = async <T>(
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<T>(command, payload);
-  } catch {
+  } catch (e) {
+    console.error(`[invokeCommand] ${command} failed:`, e);
     return null;
   }
 };

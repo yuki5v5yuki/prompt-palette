@@ -199,6 +199,37 @@ body {
 
 .combobox-wrapper {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.launcher-option-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.launcher-option-item {
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+
+.launcher-option-item:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.launcher-option-item.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .launcher-var-actions {

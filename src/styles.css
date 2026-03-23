@@ -838,3 +838,178 @@ body {
   border-radius: 4px;
   font-weight: 500;
 }
+
+/* ── Variable Details (collapsible) ── */
+.variable-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.variable-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  list-style: none;
+  user-select: none;
+}
+
+.variable-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.variable-details-summary::before {
+  content: "▶";
+  font-size: 10px;
+  color: var(--text-secondary);
+  transition: transform 0.15s;
+}
+
+.variable-details[open] > .variable-details-summary::before {
+  transform: rotate(90deg);
+}
+
+.variable-details-hint {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.variable-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Variable Card ── */
+.variable-card {
+  border-top: 1px solid var(--border);
+}
+
+.variable-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.variable-card-header:hover {
+  background: var(--bg-secondary);
+}
+
+.variable-chip-static {
+  cursor: default;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.variable-chip-static:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.variable-card-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.variable-card-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.variable-card-toggle {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.variable-card-body {
+  padding: 10px 14px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.variable-card-body .form-group {
+  margin-bottom: 10px;
+}
+
+.variable-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* ── Option List (1 box per option) ── */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.option-item .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-item .btn-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+
+.option-add-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+.option-freetext-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.option-freetext-check input[type="checkbox"] {
+  accent-color: var(--accent);
+}
