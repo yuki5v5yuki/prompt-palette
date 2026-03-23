@@ -62,6 +62,11 @@
     "options": "選択肢",
     "detectedVars": "検出された変数",
     "empty": "変数が定義されていません。本文に {{変数名}} を入れて変数を追加できます。",
+    "insertHint": "クリックで本文に挿入",
+    "quickAdd": "変数をすばやく追加",
+    "preview": "プレビュー",
+    "builtinVars": "組み込み変数",
+    "saveFirst": "カスタム変数を追加するには、先にテンプレートを保存してください",
     "placeholder": {
       "key": "例: customer_name",
       "label": "例: お客様名",

@@ -62,6 +62,11 @@
     "options": "Options",
     "detectedVars": "Detected variables",
     "empty": "No variables defined. Add {{variable_name}} in the body to use variables.",
+    "insertHint": "Click to insert into body",
+    "quickAdd": "Quick add variable",
+    "preview": "Preview",
+    "builtinVars": "Built-in variables",
+    "saveFirst": "Save template first to add custom variables",
     "placeholder": {
       "key": "e.g. customer_name",
       "label": "e.g. Customer Name",

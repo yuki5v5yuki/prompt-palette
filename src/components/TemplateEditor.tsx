@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { TemplateWithTags, Category, Tag, Variable, CreateTemplateInput, UpdateTemplateInput } from "../types";
 import { listVariables, createVariable, updateVariable, deleteVariable } from "../desktop";
@@ -12,6 +12,8 @@ interface TemplateEditorProps {
   onCancel: () => void;
 }
 
+const BUILTIN_VARS = ["@clipboard", "@today", "@now"];
+
 export default function TemplateEditor({
   template,
   categories,
@@ -22,6 +24,7 @@ export default function TemplateEditor({
 }: TemplateEditorProps) {
   const { t } = useTranslation();
   const isEditing = !!template;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState(template?.title ?? "");
   const [body, setBody] = useState(template?.body ?? "");
@@ -39,6 +42,14 @@ export default function TemplateEditor({
   const [varDefault, setVarDefault] = useState("");
   const [varOptions, setVarOptions] = useState("");
 
+  // Quick add
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddKey, setQuickAddKey] = useState("");
+  const [quickAddLabel, setQuickAddLabel] = useState("");
+
+  // Preview
+  const [showPreview, setShowPreview] = useState(false);
+
   // Extract {{variable}} tokens from body for hint display
   const bodyTokens = (body.match(/\{\{(\w+)\}\}/g) || [])
     .map((m) => m.slice(2, -2))
@@ -53,6 +64,13 @@ export default function TemplateEditor({
   useEffect(() => {
     loadVariables();
   }, [loadVariables]);
+
+  // Auto-show preview when variables exist
+  useEffect(() => {
+    if (bodyTokens.length > 0) {
+      setShowPreview(true);
+    }
+  }, [bodyTokens.length]);
 
   const toggleTag = (tagId: string) => {
     setSelectedTagIds((prev) => {
@@ -79,6 +97,7 @@ export default function TemplateEditor({
     onSave(data);
   };
 
+  // --- Variable CRUD ---
   const resetVarForm = () => {
     setVarKey("");
     setVarLabel("");
@@ -129,6 +148,52 @@ export default function TemplateEditor({
     loadVariables();
   };
 
+  // --- Click-to-Insert ---
+  const insertVariable = (key: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const token = `{{${key}}}`;
+    const newBody = body.slice(0, start) + token + body.slice(end);
+    setBody(newBody);
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const newPos = start + token.length;
+      textarea.setSelectionRange(newPos, newPos);
+    });
+  };
+
+  // --- Quick Add ---
+  const handleQuickAdd = async () => {
+    if (!quickAddKey.trim() || !template?.id) return;
+    await createVariable({
+      templateId: template.id,
+      key: quickAddKey.trim(),
+      label: quickAddLabel.trim() || quickAddKey.trim(),
+    });
+    insertVariable(quickAddKey.trim());
+    setQuickAddKey("");
+    setQuickAddLabel("");
+    setShowQuickAdd(false);
+    loadVariables();
+  };
+
+  // --- Preview renderer ---
+  const renderPreview = () => {
+    const parts = body.split(/(\{\{[^}]+\}\})/g);
+    return parts.map((part, i) => {
+      if (/^\{\{[^}]+\}\}$/.test(part)) {
+        return (
+          <span key={i} className="preview-variable">
+            {part}
+          </span>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
     <form className="template-editor" onSubmit={handleSubmit}>
       <div className="editor-header">
@@ -158,24 +223,6 @@ export default function TemplateEditor({
           placeholder={t("template.placeholder.title")}
           autoFocus
         />
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">{t("template.bodyLabel")}</label>
-        <textarea
-          className="form-textarea"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={t("template.placeholder.body")}
-          rows={10}
-        />
-        {bodyTokens.length > 0 && (
-          <div className="body-tokens-hint">
-            {t("variable.detectedVars")}: {bodyTokens.map((tok) => (
-              <span key={tok} className="token-badge">{"{{" + tok + "}}"}</span>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="form-row">
@@ -213,6 +260,122 @@ export default function TemplateEditor({
           </div>
         </div>
       )}
+
+      {/* Body Editing Area - palette + textarea + preview */}
+      <div className="form-group">
+        <label className="form-label">{t("template.bodyLabel")}</label>
+
+        <div className="body-editing-area">
+          {/* Variable Palette */}
+          <div className="variable-palette">
+            {variables.length > 0 && variables.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                className="variable-chip"
+                onClick={() => insertVariable(v.key)}
+                title={`${v.label} - ${t("variable.insertHint")}`}
+              >
+                {v.key}
+              </button>
+            ))}
+
+            {/* Built-in variables */}
+            {BUILTIN_VARS.map((bv) => (
+              <button
+                key={bv}
+                type="button"
+                className="variable-chip variable-chip-builtin"
+                onClick={() => insertVariable(bv)}
+                title={`${bv} - ${t("variable.insertHint")}`}
+              >
+                {bv}
+              </button>
+            ))}
+
+            {/* Quick add button */}
+            {isEditing && (
+              <button
+                type="button"
+                className="variable-chip variable-chip-add"
+                onClick={() => setShowQuickAdd(!showQuickAdd)}
+                title={t("variable.quickAdd")}
+              >
+                +
+              </button>
+            )}
+
+            {!isEditing && (
+              <span className="variable-palette-hint">
+                {t("variable.saveFirst")}
+              </span>
+            )}
+          </div>
+
+          {/* Quick Add Inline Form */}
+          {showQuickAdd && (
+            <div className="quick-add-form">
+              <input
+                type="text"
+                className="form-input form-input-sm"
+                value={quickAddKey}
+                onChange={(e) => setQuickAddKey(e.target.value)}
+                placeholder={t("variable.placeholder.key")}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); handleQuickAdd(); }
+                  if (e.key === "Escape") { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }
+                }}
+              />
+              <input
+                type="text"
+                className="form-input form-input-sm"
+                value={quickAddLabel}
+                onChange={(e) => setQuickAddLabel(e.target.value)}
+                placeholder={t("variable.placeholder.label")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); handleQuickAdd(); }
+                  if (e.key === "Escape") { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }
+                }}
+              />
+              <button type="button" className="btn btn-primary btn-xs" onClick={handleQuickAdd}>
+                {t("common.save")}
+              </button>
+              <button type="button" className="btn btn-secondary btn-xs" onClick={() => { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }}>
+                {t("common.cancel")}
+              </button>
+            </div>
+          )}
+
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            className="form-textarea"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder={t("template.placeholder.body")}
+            rows={10}
+          />
+
+          {/* Preview */}
+          {bodyTokens.length > 0 && (
+            <div className="body-preview-section">
+              <button
+                type="button"
+                className="preview-toggle"
+                onClick={() => setShowPreview(!showPreview)}
+              >
+                {t("variable.preview")} {showPreview ? "▲" : "▼"}
+              </button>
+              {showPreview && (
+                <div className="body-preview">
+                  {renderPreview()}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Variable Management Section - only visible when editing */}
       {isEditing && template && (

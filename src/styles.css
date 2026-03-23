@@ -701,3 +701,140 @@ body {
 .btn-icon-danger:hover {
   color: var(--danger);
 }
+
+/* ── Variable Palette ── */
+.body-editing-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.variable-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+}
+
+.variable-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.variable-chip:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.variable-chip-builtin {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.variable-chip-builtin:hover {
+  background: var(--text-secondary);
+  color: #fff;
+  border-color: var(--text-secondary);
+}
+
+.variable-chip-add {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+.variable-chip-add:hover {
+  background: var(--accent);
+  color: #fff;
+  border-style: solid;
+}
+
+.variable-palette-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── Quick Add Form ── */
+.quick-add-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.quick-add-form .form-input-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Body Preview ── */
+.body-preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  align-self: flex-start;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.preview-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--accent);
+}
+
+.body-preview {
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.preview-variable {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
