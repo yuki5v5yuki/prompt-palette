@@ -4,20 +4,60 @@
     "version": "v0.1.0",
     "description": "どこでも使えるテキスト挿入ランチャー"
   },
-  "phase0": {
-    "title": "Phase 0 — 動作確認",
-    "testIpc": "IPC接続テスト",
-    "testDb": "データベーステスト",
-    "status": "ステータス",
-    "schemaVersion": "スキーマバージョン",
-    "tableCount": "テーブル数",
-    "waiting": "テストボタンを押してください",
-    "success": "成功",
-    "error": "エラー"
-  },
   "common": {
     "language": "言語",
     "japanese": "日本語",
-    "english": "English"
+    "english": "English",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "create": "作成",
+    "search": "検索...",
+    "noData": "データがありません",
+    "confirm": "確認",
+    "confirmDelete": "本当に削除しますか？"
+  },
+  "nav": {
+    "templates": "テンプレート",
+    "categories": "カテゴリ",
+    "tags": "タグ",
+    "settings": "設定"
+  },
+  "template": {
+    "title": "テンプレート管理",
+    "newTemplate": "新規テンプレート",
+    "titleLabel": "タイトル",
+    "bodyLabel": "本文",
+    "categoryLabel": "カテゴリ",
+    "tagsLabel": "タグ",
+    "noCategory": "なし",
+    "useCount": "使用回数",
+    "lastUsed": "最終使用",
+    "placeholder": {
+      "title": "テンプレート名を入力",
+      "body": "テンプレート本文を入力\n{{変数名}} で変数を埋め込めます"
+    },
+    "empty": "テンプレートがありません。「新規テンプレート」から作成してください。"
+  },
+  "category": {
+    "title": "カテゴリ管理",
+    "newCategory": "新規カテゴリ",
+    "nameLabel": "カテゴリ名",
+    "iconLabel": "アイコン",
+    "colorLabel": "カラー",
+    "placeholder": {
+      "name": "カテゴリ名を入力"
+    },
+    "empty": "カテゴリがありません。"
+  },
+  "tag": {
+    "title": "タグ管理",
+    "newTag": "新規タグ",
+    "nameLabel": "タグ名",
+    "placeholder": {
+      "name": "タグ名を入力"
+    },
+    "empty": "タグがありません。"
   }
 }

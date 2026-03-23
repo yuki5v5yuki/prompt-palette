@@ -26,6 +26,10 @@ export interface Template {
   updatedAt: string;
 }
 
+export interface TemplateWithTags extends Template {
+  tags: Tag[];
+}
+
 export interface TemplateTag {
   templateId: string;
   tagId: string;
@@ -39,6 +43,44 @@ export interface Variable {
   defaultValue: string | null;
   options: string[] | null;
   sortOrder: number;
+}
+
+// --- Input types ---
+
+export interface CreateCategoryInput {
+  name: string;
+  icon?: string;
+  color?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  icon?: string;
+  color?: string;
+  sortOrder?: number;
+}
+
+export interface CreateTagInput {
+  name: string;
+}
+
+export interface CreateTemplateInput {
+  title: string;
+  body: string;
+  categoryId?: string;
+  hotkey?: string;
+  sortOrder?: number;
+  tagIds?: string[];
+}
+
+export interface UpdateTemplateInput {
+  title?: string;
+  body?: string;
+  categoryId?: string;
+  hotkey?: string;
+  sortOrder?: number;
+  tagIds?: string[];
 }
 
 // --- IPC response types ---

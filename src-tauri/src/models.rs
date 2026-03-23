@@ -1,0 +1,94 @@
+use serde::{Deserialize, Serialize};
+
+// --- Category ---
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Category {
+    pub id: String,
+    pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateCategoryInput {
+    pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCategoryInput {
+    pub name: Option<String>,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: Option<i32>,
+}
+
+// --- Tag ---
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Tag {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTagInput {
+    pub name: String,
+}
+
+// --- Template ---
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Template {
+    pub id: String,
+    pub title: String,
+    pub body: String,
+    pub category_id: Option<String>,
+    pub hotkey: Option<String>,
+    pub use_count: i32,
+    pub last_used_at: Option<String>,
+    pub sort_order: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Template with related tags
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TemplateWithTags {
+    #[serde(flatten)]
+    pub template: Template,
+    pub tags: Vec<Tag>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTemplateInput {
+    pub title: String,
+    pub body: String,
+    pub category_id: Option<String>,
+    pub hotkey: Option<String>,
+    pub sort_order: Option<i32>,
+    pub tag_ids: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateTemplateInput {
+    pub title: Option<String>,
+    pub body: Option<String>,
+    pub category_id: Option<String>,
+    pub hotkey: Option<String>,
+    pub sort_order: Option<i32>,
+    pub tag_ids: Option<Vec<String>>,
+}

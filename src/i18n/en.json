@@ -4,20 +4,60 @@
     "version": "v0.1.0",
     "description": "Global text insertion launcher"
   },
-  "phase0": {
-    "title": "Phase 0 — Verification",
-    "testIpc": "Test IPC Bridge",
-    "testDb": "Test Database",
-    "status": "Status",
-    "schemaVersion": "Schema Version",
-    "tableCount": "Table Count",
-    "waiting": "Press a test button",
-    "success": "Success",
-    "error": "Error"
-  },
   "common": {
     "language": "Language",
     "japanese": "日本語",
-    "english": "English"
+    "english": "English",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "noData": "No data",
+    "confirm": "Confirm",
+    "confirmDelete": "Are you sure you want to delete?"
+  },
+  "nav": {
+    "templates": "Templates",
+    "categories": "Categories",
+    "tags": "Tags",
+    "settings": "Settings"
+  },
+  "template": {
+    "title": "Template Management",
+    "newTemplate": "New Template",
+    "titleLabel": "Title",
+    "bodyLabel": "Body",
+    "categoryLabel": "Category",
+    "tagsLabel": "Tags",
+    "noCategory": "None",
+    "useCount": "Use Count",
+    "lastUsed": "Last Used",
+    "placeholder": {
+      "title": "Enter template name",
+      "body": "Enter template body\nUse {{variable}} to embed variables"
+    },
+    "empty": "No templates yet. Click \"New Template\" to create one."
+  },
+  "category": {
+    "title": "Category Management",
+    "newCategory": "New Category",
+    "nameLabel": "Category Name",
+    "iconLabel": "Icon",
+    "colorLabel": "Color",
+    "placeholder": {
+      "name": "Enter category name"
+    },
+    "empty": "No categories yet."
+  },
+  "tag": {
+    "title": "Tag Management",
+    "newTag": "New Tag",
+    "nameLabel": "Tag Name",
+    "placeholder": {
+      "name": "Enter tag name"
+    },
+    "empty": "No tags yet."
   }
 }
