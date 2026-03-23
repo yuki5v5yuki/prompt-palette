@@ -35,9 +35,18 @@ export interface TemplateTag {
   tagId: string;
 }
 
+export interface VariablePackage {
+  id: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Variable {
   id: string;
-  templateId: string;
+  packageId: string;
   key: string;
   label: string;
   defaultValue: string | null;
@@ -73,6 +82,7 @@ export interface CreateTemplateInput {
   hotkey?: string;
   sortOrder?: number;
   tagIds?: string[];
+  packageIds?: string[];
 }
 
 export interface UpdateTemplateInput {
@@ -82,10 +92,23 @@ export interface UpdateTemplateInput {
   hotkey?: string;
   sortOrder?: number;
   tagIds?: string[];
+  packageIds?: string[];
+}
+
+export interface CreateVariablePackageInput {
+  name: string;
+  description?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateVariablePackageInput {
+  name?: string;
+  description?: string;
+  sortOrder?: number;
 }
 
 export interface CreateVariableInput {
-  templateId: string;
+  packageId: string;
   key: string;
   label: string;
   defaultValue?: string;
@@ -110,6 +133,7 @@ export interface VariableFormField {
   options: string[] | null;
   isBuiltin: boolean;
   allowFreeText: boolean;
+  variableId: string | null;
 }
 
 export interface InterpolateRequest {

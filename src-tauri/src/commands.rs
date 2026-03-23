@@ -149,6 +149,103 @@ pub fn delete_tag(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
+// ─── Variable Packages ───
+
+#[tauri::command]
+pub fn list_variable_packages(app: AppHandle) -> Result<Vec<VariablePackage>, String> {
+    let conn = db::open(&app)?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, name, description, sort_order, created_at, updated_at
+             FROM variable_packages ORDER BY sort_order, name",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(VariablePackage {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                sort_order: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_variable_package(app: AppHandle, input: CreateVariablePackageInput) -> Result<VariablePackage, String> {
+    let conn = db::open(&app)?;
+    let id = ulid::Ulid::new().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let sort_order = input.sort_order.unwrap_or(0);
+    conn.execute(
+        "INSERT INTO variable_packages (id, name, description, sort_order, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![id, input.name, input.description, sort_order, now, now],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(VariablePackage {
+        id,
+        name: input.name,
+        description: input.description,
+        sort_order,
+        created_at: now.clone(),
+        updated_at: now,
+    })
+}
+
+#[tauri::command]
+pub fn update_variable_package(app: AppHandle, id: String, input: UpdateVariablePackageInput) -> Result<VariablePackage, String> {
+    let conn = db::open(&app)?;
+    let current: VariablePackage = conn
+        .query_row(
+            "SELECT id, name, description, sort_order, created_at, updated_at FROM variable_packages WHERE id = ?1",
+            [&id],
+            |row| {
+                Ok(VariablePackage {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    description: row.get(2)?,
+                    sort_order: row.get(3)?,
+                    created_at: row.get(4)?,
+                    updated_at: row.get(5)?,
+                })
+            },
+        )
+        .map_err(|e| e.to_string())?;
+
+    let name = input.name.unwrap_or(current.name);
+    let description = input.description.or(current.description);
+    let sort_order = input.sort_order.unwrap_or(current.sort_order);
+    let now = chrono::Utc::now().to_rfc3339();
+
+    conn.execute(
+        "UPDATE variable_packages SET name = ?1, description = ?2, sort_order = ?3, updated_at = ?4 WHERE id = ?5",
+        rusqlite::params![name, description, sort_order, now, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(VariablePackage {
+        id,
+        name,
+        description,
+        sort_order,
+        created_at: current.created_at,
+        updated_at: now,
+    })
+}
+
+#[tauri::command]
+pub fn delete_variable_package(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = db::open(&app)?;
+    conn.execute("DELETE FROM variable_packages WHERE id = ?1", [&id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ─── Templates ───
 
 fn get_tags_for_template(conn: &rusqlite::Connection, template_id: &str) -> Result<Vec<Tag>, String> {
@@ -178,6 +275,50 @@ fn set_template_tags(conn: &rusqlite::Connection, template_id: &str, tag_ids: &[
         conn.execute(
             "INSERT INTO template_tags (template_id, tag_id) VALUES (?1, ?2)",
             rusqlite::params![template_id, tag_id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn get_packages_for_template(conn: &rusqlite::Connection, template_id: &str) -> Result<Vec<VariablePackage>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT vp.id, vp.name, vp.description, vp.sort_order, vp.created_at, vp.updated_at
+             FROM variable_packages vp
+             INNER JOIN template_variable_packages tvp ON tvp.package_id = vp.id
+             WHERE tvp.template_id = ?1
+             ORDER BY vp.sort_order, vp.name",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([template_id], |row| {
+            Ok(VariablePackage {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                description: row.get(2)?,
+                sort_order: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_template_packages(app: AppHandle, template_id: String) -> Result<Vec<VariablePackage>, String> {
+    let conn = db::open(&app)?;
+    get_packages_for_template(&conn, &template_id)
+}
+
+fn set_template_packages(conn: &rusqlite::Connection, template_id: &str, package_ids: &[String]) -> Result<(), String> {
+    conn.execute("DELETE FROM template_variable_packages WHERE template_id = ?1", [template_id])
+        .map_err(|e| e.to_string())?;
+    for package_id in package_ids {
+        conn.execute(
+            "INSERT INTO template_variable_packages (template_id, package_id) VALUES (?1, ?2)",
+            rusqlite::params![template_id, package_id],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -255,6 +396,9 @@ pub fn create_template(app: AppHandle, input: CreateTemplateInput) -> Result<Tem
     if let Some(tag_ids) = &input.tag_ids {
         set_template_tags(&conn, &id, tag_ids)?;
     }
+    if let Some(package_ids) = &input.package_ids {
+        set_template_packages(&conn, &id, package_ids)?;
+    }
 
     let tags = get_tags_for_template(&conn, &id)?;
     Ok(TemplateWithTags {
@@ -301,6 +445,9 @@ pub fn update_template(app: AppHandle, id: String, input: UpdateTemplateInput) -
 
     if let Some(tag_ids) = &input.tag_ids {
         set_template_tags(&conn, &id, tag_ids)?;
+    }
+    if let Some(package_ids) = &input.package_ids {
+        set_template_packages(&conn, &id, package_ids)?;
     }
 
     let tags = get_tags_for_template(&conn, &id)?;
@@ -376,7 +523,7 @@ fn row_to_variable(row: &rusqlite::Row) -> rusqlite::Result<Variable> {
     let allow_free_text: i32 = row.get(7)?;
     Ok(Variable {
         id: row.get(0)?,
-        template_id: row.get(1)?,
+        package_id: row.get(1)?,
         key: row.get(2)?,
         label: row.get(3)?,
         default_value: row.get(4)?,
@@ -387,18 +534,18 @@ fn row_to_variable(row: &rusqlite::Row) -> rusqlite::Result<Variable> {
 }
 
 #[tauri::command]
-pub fn list_variables(app: AppHandle, template_id: String) -> Result<Vec<Variable>, String> {
+pub fn list_variables(app: AppHandle, package_id: String) -> Result<Vec<Variable>, String> {
     let conn = db::open(&app)?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, template_id, key, label, default_value, options, sort_order, allow_free_text
+            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text
              FROM variables
-             WHERE template_id = ?1
+             WHERE package_id = ?1
              ORDER BY sort_order, key",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map([&template_id], row_to_variable)
+        .query_map([&package_id], row_to_variable)
         .map_err(|e| e.to_string())?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
@@ -412,15 +559,15 @@ pub fn create_variable(app: AppHandle, input: CreateVariableInput) -> Result<Var
     let options_json = input.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
 
     conn.execute(
-        "INSERT INTO variables (id, template_id, key, label, default_value, options, sort_order, allow_free_text)
+        "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![id, input.template_id, input.key, input.label, input.default_value, options_json, sort_order, allow_free_text as i32],
+        rusqlite::params![id, input.package_id, input.key, input.label, input.default_value, options_json, sort_order, allow_free_text as i32],
     )
     .map_err(|e| e.to_string())?;
 
     Ok(Variable {
         id,
-        template_id: input.template_id,
+        package_id: input.package_id,
         key: input.key,
         label: input.label,
         default_value: input.default_value,
@@ -435,7 +582,7 @@ pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -
     let conn = db::open(&app)?;
     let current: Variable = conn
         .query_row(
-            "SELECT id, template_id, key, label, default_value, options, sort_order, allow_free_text FROM variables WHERE id = ?1",
+            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text FROM variables WHERE id = ?1",
             [&id],
             row_to_variable,
         )
@@ -457,7 +604,7 @@ pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -
 
     Ok(Variable {
         id,
-        template_id: current.template_id,
+        package_id: current.package_id,
         key,
         label,
         default_value,
@@ -518,11 +665,15 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
 
     let tokens = interpolation::extract_tokens(&body);
 
+    // Get all variables from packages linked to this template
     let variables = {
         let mut stmt = conn
             .prepare(
-                "SELECT id, template_id, key, label, default_value, options, sort_order, allow_free_text
-                 FROM variables WHERE template_id = ?1 ORDER BY sort_order",
+                "SELECT v.id, v.package_id, v.key, v.label, v.default_value, v.options, v.sort_order, v.allow_free_text
+                 FROM variables v
+                 INNER JOIN template_variable_packages tvp ON tvp.package_id = v.package_id
+                 WHERE tvp.template_id = ?1
+                 ORDER BY v.sort_order",
             )
             .map_err(|e| e.to_string())?;
         let rows = stmt
@@ -532,8 +683,12 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
     };
 
     let mut fields = Vec::new();
+    let mut seen_keys = std::collections::HashSet::new();
     for (_full, name, _filter) in &tokens {
         if interpolation::is_builtin(name) || name.starts_with('#') || name.starts_with('/') {
+            continue;
+        }
+        if !seen_keys.insert(name.clone()) {
             continue;
         }
         if let Some(var) = variables.iter().find(|v| v.key == *name) {
@@ -544,6 +699,7 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
                 options: var.options.clone(),
                 is_builtin: false,
                 allow_free_text: var.allow_free_text,
+                variable_id: Some(var.id.clone()),
             });
         } else {
             fields.push(VariableFormField {
@@ -553,6 +709,7 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
                 options: None,
                 is_builtin: false,
                 allow_free_text: true,
+                variable_id: None,
             });
         }
     }

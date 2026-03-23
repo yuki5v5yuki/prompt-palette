@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import type { TemplateWithTags, Category, Tag, Variable, CreateTemplateInput, UpdateTemplateInput } from "../types";
-import { listVariables, createVariable, updateVariable, deleteVariable } from "../desktop";
+import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
+import { listVariablePackages, listVariables, getTemplatePackages } from "../desktop";
 
 interface TemplateEditorProps {
   template?: TemplateWithTags;
@@ -33,20 +33,10 @@ export default function TemplateEditor({
     new Set(template?.tags.map((t) => t.id) ?? [])
   );
 
-  // Variable management
-  const [variables, setVariables] = useState<Variable[]>([]);
-  const [showVarEditor, setShowVarEditor] = useState(false);
-  const [editingVar, setEditingVar] = useState<Variable | null>(null);
-  const [varKey, setVarKey] = useState("");
-  const [varLabel, setVarLabel] = useState("");
-  const [varDefault, setVarDefault] = useState("");
-  const [varOptionsList, setVarOptionsList] = useState<string[]>([]);
-  const [varAllowFreeText, setVarAllowFreeText] = useState(true);
-
-  // Quick add
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddKey, setQuickAddKey] = useState("");
-  const [quickAddLabel, setQuickAddLabel] = useState("");
+  // Variable packages
+  const [allPackages, setAllPackages] = useState<VariablePackage[]>([]);
+  const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
+  const [packageVariables, setPackageVariables] = useState<Variable[]>([]);
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -56,15 +46,36 @@ export default function TemplateEditor({
     .map((m) => m.slice(2, -2))
     .filter((v, i, a) => a.indexOf(v) === i);
 
-  const loadVariables = useCallback(async () => {
+  // Load all packages
+  useEffect(() => {
+    (async () => {
+      const pkgs = await listVariablePackages();
+      setAllPackages(pkgs ?? []);
+    })();
+  }, []);
+
+  // Load template's assigned packages
+  useEffect(() => {
     if (!template?.id) return;
-    const vars = await listVariables(template.id);
-    setVariables(vars ?? []);
+    (async () => {
+      const pkgs = await getTemplatePackages(template.id);
+      if (pkgs) {
+        setSelectedPackageIds(new Set(pkgs.map((p) => p.id)));
+      }
+    })();
   }, [template?.id]);
 
+  // Load variables from selected packages
   useEffect(() => {
-    loadVariables();
-  }, [loadVariables]);
+    (async () => {
+      const allVars: Variable[] = [];
+      for (const pkgId of selectedPackageIds) {
+        const vars = await listVariables(pkgId);
+        if (vars) allVars.push(...vars);
+      }
+      setPackageVariables(allVars);
+    })();
+  }, [selectedPackageIds]);
 
   // Auto-show preview when variables exist
   useEffect(() => {
@@ -85,6 +96,18 @@ export default function TemplateEditor({
     });
   };
 
+  const togglePackage = (packageId: string) => {
+    setSelectedPackageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(packageId)) {
+        next.delete(packageId);
+      } else {
+        next.add(packageId);
+      }
+      return next;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
@@ -94,62 +117,9 @@ export default function TemplateEditor({
       body: body.trim(),
       categoryId: categoryId || undefined,
       tagIds: Array.from(selectedTagIds),
+      packageIds: Array.from(selectedPackageIds),
     };
     onSave(data);
-  };
-
-  // --- Variable CRUD ---
-  const resetVarForm = () => {
-    setVarKey("");
-    setVarLabel("");
-    setVarDefault("");
-    setVarOptionsList([]);
-    setVarAllowFreeText(true);
-    setEditingVar(null);
-    setShowVarEditor(false);
-  };
-
-  const handleSaveVariable = async () => {
-    if (!varKey.trim() || !template?.id) return;
-
-    const filteredOptions = varOptionsList.map((s) => s.trim()).filter(Boolean);
-    const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
-
-    if (editingVar) {
-      await updateVariable(editingVar.id, {
-        key: varKey.trim(),
-        label: varLabel.trim() || varKey.trim(),
-        defaultValue: varDefault.trim() || undefined,
-        options: optionsArray,
-        allowFreeText: varAllowFreeText,
-      });
-    } else {
-      await createVariable({
-        templateId: template.id,
-        key: varKey.trim(),
-        label: varLabel.trim() || varKey.trim(),
-        defaultValue: varDefault.trim() || undefined,
-        options: optionsArray,
-        allowFreeText: varAllowFreeText,
-      });
-    }
-    resetVarForm();
-    loadVariables();
-  };
-
-  const handleEditVariable = (v: Variable) => {
-    setEditingVar(v);
-    setVarKey(v.key);
-    setVarLabel(v.label);
-    setVarDefault(v.defaultValue ?? "");
-    setVarOptionsList(v.options ?? []);
-    setVarAllowFreeText(v.allowFreeText);
-    setShowVarEditor(true);
-  };
-
-  const handleDeleteVariable = async (id: string) => {
-    await deleteVariable(id);
-    loadVariables();
   };
 
   // --- Click-to-Insert ---
@@ -166,21 +136,6 @@ export default function TemplateEditor({
       const newPos = start + token.length;
       textarea.setSelectionRange(newPos, newPos);
     });
-  };
-
-  // --- Quick Add ---
-  const handleQuickAdd = async () => {
-    if (!quickAddKey.trim() || !template?.id) return;
-    await createVariable({
-      templateId: template.id,
-      key: quickAddKey.trim(),
-      label: quickAddLabel.trim() || quickAddKey.trim(),
-    });
-    insertVariable(quickAddKey.trim());
-    setQuickAddKey("");
-    setQuickAddLabel("");
-    setShowQuickAdd(false);
-    loadVariables();
   };
 
   // --- Preview renderer ---
@@ -265,6 +220,24 @@ export default function TemplateEditor({
         </div>
       )}
 
+      {allPackages.length > 0 && (
+        <div className="form-group">
+          <label className="form-label">{t("variablePackage.packagesLabel")}</label>
+          <div className="tag-selector">
+            {allPackages.map((pkg) => (
+              <button
+                key={pkg.id}
+                type="button"
+                className={`tag-toggle ${selectedPackageIds.has(pkg.id) ? "active" : ""}`}
+                onClick={() => togglePackage(pkg.id)}
+              >
+                {pkg.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Body Editing Area - palette + textarea + preview */}
       <div className="form-group">
         <label className="form-label">{t("template.bodyLabel")}</label>
@@ -272,7 +245,7 @@ export default function TemplateEditor({
         <div className="body-editing-area">
           {/* Variable Palette */}
           <div className="variable-palette">
-            {variables.length > 0 && variables.map((v) => (
+            {packageVariables.length > 0 && packageVariables.map((v) => (
               <button
                 key={v.id}
                 type="button"
@@ -297,59 +270,12 @@ export default function TemplateEditor({
               </button>
             ))}
 
-            {/* Quick add button */}
-            {isEditing && (
-              <button
-                type="button"
-                className="variable-chip variable-chip-add"
-                onClick={() => setShowQuickAdd(!showQuickAdd)}
-                title={t("variable.quickAdd")}
-              >
-                +
-              </button>
-            )}
-
-            {!isEditing && (
+            {allPackages.length === 0 && selectedPackageIds.size === 0 && (
               <span className="variable-palette-hint">
-                {t("variable.saveFirst")}
+                {t("variablePackage.noPackagesHint")}
               </span>
             )}
           </div>
-
-          {/* Quick Add Inline Form */}
-          {showQuickAdd && (
-            <div className="quick-add-form">
-              <input
-                type="text"
-                className="form-input form-input-sm"
-                value={quickAddKey}
-                onChange={(e) => setQuickAddKey(e.target.value)}
-                placeholder={t("variable.placeholder.key")}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); handleQuickAdd(); }
-                  if (e.key === "Escape") { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }
-                }}
-              />
-              <input
-                type="text"
-                className="form-input form-input-sm"
-                value={quickAddLabel}
-                onChange={(e) => setQuickAddLabel(e.target.value)}
-                placeholder={t("variable.placeholder.label")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.preventDefault(); handleQuickAdd(); }
-                  if (e.key === "Escape") { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }
-                }}
-              />
-              <button type="button" className="btn btn-primary btn-xs" onClick={handleQuickAdd}>
-                {t("common.save")}
-              </button>
-              <button type="button" className="btn btn-secondary btn-xs" onClick={() => { setShowQuickAdd(false); setQuickAddKey(""); setQuickAddLabel(""); }}>
-                {t("common.cancel")}
-              </button>
-            </div>
-          )}
 
           {/* Textarea */}
           <textarea
@@ -380,99 +306,6 @@ export default function TemplateEditor({
           )}
         </div>
       </div>
-
-      {/* Variable Detail Settings - collapsible, only when editing & variables exist */}
-      {isEditing && template && variables.length > 0 && (
-        <details className="variable-details">
-          <summary className="variable-details-summary">
-            {t("variable.detailSettings")}
-            <span className="variable-details-hint">{t("variable.detailSettingsHint")}</span>
-          </summary>
-          <div className="variable-details-content">
-            {variables.map((v) => (
-              <div key={v.id} className="variable-card">
-                <div className="variable-card-header" onClick={() => editingVar?.id === v.id ? resetVarForm() : handleEditVariable(v)}>
-                  <span className="variable-chip variable-chip-static">{v.key}</span>
-                  <span className="variable-card-label">{v.label}</span>
-                  {v.defaultValue && <span className="variable-card-meta">{v.defaultValue}</span>}
-                  {v.options && v.options.length > 0 && <span className="variable-card-meta">{v.options.join(", ")}</span>}
-                  <span className="variable-card-toggle">{editingVar?.id === v.id ? "▲" : "▼"}</span>
-                </div>
-                {editingVar?.id === v.id && (
-                  <div className="variable-card-body">
-                    <div className="form-row">
-                      <div className="form-group form-group-half">
-                        <label className="form-label">{t("variable.labelLabel")}</label>
-                        <input type="text" className="form-input" value={varLabel} onChange={(e) => setVarLabel(e.target.value)} placeholder={t("variable.placeholder.label")} />
-                      </div>
-                      <div className="form-group form-group-half">
-                        <label className="form-label">{t("variable.defaultLabel")}</label>
-                        <input type="text" className="form-input" value={varDefault} onChange={(e) => setVarDefault(e.target.value)} placeholder={t("variable.placeholder.default")} />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">{t("variable.optionsLabel")}</label>
-                      <div className="option-list">
-                        {varOptionsList.map((opt, idx) => (
-                          <div key={idx} className="option-item">
-                            <input
-                              type="text"
-                              className="form-input"
-                              value={opt}
-                              onChange={(e) => {
-                                const next = [...varOptionsList];
-                                next[idx] = e.target.value;
-                                setVarOptionsList(next);
-                              }}
-                              placeholder={`${t("variable.optionsLabel")} ${idx + 1}`}
-                            />
-                            <button
-                              type="button"
-                              className="btn-icon btn-icon-danger"
-                              onClick={() => setVarOptionsList(varOptionsList.filter((_, i) => i !== idx))}
-                              title={t("common.delete")}
-                            >
-                              x
-                            </button>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          className="option-add-btn"
-                          onClick={() => setVarOptionsList([...varOptionsList, ""])}
-                        >
-                          + {t("variable.addOption")}
-                        </button>
-                      </div>
-                    </div>
-                    <label className="option-freetext-check">
-                      <input
-                        type="checkbox"
-                        checked={varAllowFreeText}
-                        onChange={(e) => setVarAllowFreeText(e.target.checked)}
-                      />
-                      {t("variable.allowFreeText")}
-                    </label>
-                    <div className="variable-card-actions">
-                      <button type="button" className="btn btn-danger btn-xs" onClick={() => handleDeleteVariable(v.id)}>
-                        {t("common.delete")}
-                      </button>
-                      <div>
-                        <button type="button" className="btn btn-secondary btn-xs" onClick={resetVarForm}>
-                          {t("common.cancel")}
-                        </button>
-                        <button type="button" className="btn btn-primary btn-xs" onClick={handleSaveVariable} style={{ marginLeft: 6 }}>
-                          {t("common.save")}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
 
       {isEditing && template && (
         <div className="editor-meta">

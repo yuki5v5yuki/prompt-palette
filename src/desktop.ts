@@ -4,6 +4,7 @@ import type {
   Category,
   Tag,
   TemplateWithTags,
+  VariablePackage,
   Variable,
   VariableFormField,
   CreateCategoryInput,
@@ -11,6 +12,8 @@ import type {
   CreateTagInput,
   CreateTemplateInput,
   UpdateTemplateInput,
+  CreateVariablePackageInput,
+  UpdateVariablePackageInput,
   CreateVariableInput,
   UpdateVariableInput,
   InterpolateRequest,
@@ -101,10 +104,27 @@ export const recordTemplateUse = (id: string) =>
 export const listTemplatesByFrequency = () =>
   invokeCommand<TemplateWithTags[]>("list_templates_by_frequency");
 
+// --- Variable Packages ---
+
+export const listVariablePackages = () =>
+  invokeCommand<VariablePackage[]>("list_variable_packages");
+
+export const createVariablePackage = (input: CreateVariablePackageInput) =>
+  invokeCommand<VariablePackage>("create_variable_package", { input });
+
+export const updateVariablePackage = (id: string, input: UpdateVariablePackageInput) =>
+  invokeCommand<VariablePackage>("update_variable_package", { id, input });
+
+export const deleteVariablePackage = (id: string) =>
+  invokeCommand<void>("delete_variable_package", { id });
+
+export const getTemplatePackages = (templateId: string) =>
+  invokeCommand<VariablePackage[]>("get_template_packages", { templateId });
+
 // --- Variables ---
 
-export const listVariables = (templateId: string) =>
-  invokeCommand<Variable[]>("list_variables", { templateId });
+export const listVariables = (packageId: string) =>
+  invokeCommand<Variable[]>("list_variables", { packageId });
 
 export const createVariable = (input: CreateVariableInput) =>
   invokeCommand<Variable>("create_variable", { input });

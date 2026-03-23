@@ -22,6 +22,7 @@
     "templates": "Templates",
     "categories": "Categories",
     "tags": "Tags",
+    "packages": "Variable Packages",
     "settings": "Settings"
   },
   "template": {
@@ -77,6 +78,20 @@
       "default": "Default value",
       "options": "Comma-separated: Mr, Ms, Dr"
     }
+  },
+  "variablePackage": {
+    "title": "Variable Package Management",
+    "packagesLabel": "Variable Packages",
+    "noPackagesHint": "No variable packages available",
+    "newPackage": "New Package",
+    "nameLabel": "Package Name",
+    "descriptionLabel": "Description",
+    "placeholder": {
+      "name": "Enter package name",
+      "description": "Package description (optional)"
+    },
+    "variableCount": "{{count}} variables",
+    "empty": "No variable packages yet."
   },
   "tag": {
     "title": "Tag Management",

@@ -3,6 +3,7 @@ import Sidebar, { type NavTab } from "./components/Sidebar";
 import TemplateList from "./components/TemplateList";
 import CategoryManager from "./components/CategoryManager";
 import TagManager from "./components/TagManager";
+import VariablePackageManager from "./components/VariablePackageManager";
 import "./styles.css";
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         {activeTab === "templates" && <TemplateList />}
         {activeTab === "categories" && <CategoryManager />}
         {activeTab === "tags" && <TagManager />}
+        {activeTab === "packages" && <VariablePackageManager />}
       </main>
     </div>
   );

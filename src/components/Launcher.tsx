@@ -7,7 +7,6 @@ import {
   getTemplateFormSchema,
   interpolateTemplate,
   appendVariableOption,
-  listVariables,
 } from "../desktop";
 
 const fuseOptions = {
@@ -112,13 +111,12 @@ export default function Launcher() {
     }
   }, []);
 
-  const saveInputHistory = useCallback(async (templateId: string, values: Record<string, string>) => {
-    const vars = await listVariables(templateId);
-    if (!vars) return;
-    for (const v of vars) {
-      const inputValue = values[v.key];
+  const saveInputHistory = useCallback(async (fields: VariableFormField[], values: Record<string, string>) => {
+    for (const f of fields) {
+      if (!f.variableId) continue;
+      const inputValue = values[f.key];
       if (inputValue && inputValue.trim()) {
-        await appendVariableOption(v.id, inputValue.trim());
+        await appendVariableOption(f.variableId, inputValue.trim());
       }
     }
   }, []);
@@ -162,11 +160,11 @@ export default function Launcher() {
     });
 
     // Save input history
-    await saveInputHistory(selectedTemplate.id, formValues);
+    await saveInputHistory(formFields, formValues);
 
     await pasteText(text ?? selectedTemplate.body);
     resetLauncher();
-  }, [selectedTemplate, formValues, pasteText, resetLauncher, saveInputHistory]);
+  }, [selectedTemplate, formFields, formValues, pasteText, resetLauncher, saveInputHistory]);
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

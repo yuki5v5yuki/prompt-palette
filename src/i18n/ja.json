@@ -22,6 +22,7 @@
     "templates": "テンプレート",
     "categories": "カテゴリ",
     "tags": "タグ",
+    "packages": "変数パッケージ",
     "settings": "設定"
   },
   "template": {
@@ -77,6 +78,20 @@
       "default": "デフォルト値",
       "options": "カンマ区切り: 様, さん, 御中"
     }
+  },
+  "variablePackage": {
+    "title": "変数パッケージ管理",
+    "packagesLabel": "変数パッケージ",
+    "noPackagesHint": "変数パッケージがありません",
+    "newPackage": "新規パッケージ",
+    "nameLabel": "パッケージ名",
+    "descriptionLabel": "説明",
+    "placeholder": {
+      "name": "パッケージ名を入力",
+      "description": "パッケージの説明（省略可）"
+    },
+    "variableCount": "{{count}}個の変数",
+    "empty": "変数パッケージがありません。"
   },
   "tag": {
     "title": "タグ管理",

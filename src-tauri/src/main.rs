@@ -101,6 +101,12 @@ fn main() {
             commands::list_tags,
             commands::create_tag,
             commands::delete_tag,
+            // Variable Packages
+            commands::list_variable_packages,
+            commands::create_variable_package,
+            commands::update_variable_package,
+            commands::delete_variable_package,
+            commands::get_template_packages,
             // Templates
             commands::list_templates,
             commands::get_template,

@@ -80,6 +80,7 @@ pub struct CreateTemplateInput {
     pub hotkey: Option<String>,
     pub sort_order: Option<i32>,
     pub tag_ids: Option<Vec<String>>,
+    pub package_ids: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,6 +92,36 @@ pub struct UpdateTemplateInput {
     pub hotkey: Option<String>,
     pub sort_order: Option<i32>,
     pub tag_ids: Option<Vec<String>>,
+    pub package_ids: Option<Vec<String>>,
+}
+
+// --- Variable Package ---
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VariablePackage {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub sort_order: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateVariablePackageInput {
+    pub name: String,
+    pub description: Option<String>,
+    pub sort_order: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateVariablePackageInput {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub sort_order: Option<i32>,
 }
 
 // --- Variable ---
@@ -99,7 +130,7 @@ pub struct UpdateTemplateInput {
 #[serde(rename_all = "camelCase")]
 pub struct Variable {
     pub id: String,
-    pub template_id: String,
+    pub package_id: String,
     pub key: String,
     pub label: String,
     pub default_value: Option<String>,
@@ -111,7 +142,7 @@ pub struct Variable {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateVariableInput {
-    pub template_id: String,
+    pub package_id: String,
     pub key: String,
     pub label: String,
     pub default_value: Option<String>,
@@ -149,4 +180,5 @@ pub struct VariableFormField {
     pub options: Option<Vec<String>>,
     pub is_builtin: bool,
     pub allow_free_text: bool,
+    pub variable_id: Option<String>,
 }
