@@ -51,6 +51,24 @@
     },
     "empty": "No categories yet."
   },
+  "variable": {
+    "title": "Variable Definitions",
+    "addVariable": "Add Variable",
+    "keyLabel": "Variable Key",
+    "labelLabel": "Display Label",
+    "defaultLabel": "Default Value",
+    "optionsLabel": "Options",
+    "default": "Default",
+    "options": "Options",
+    "detectedVars": "Detected variables",
+    "empty": "No variables defined. Add {{variable_name}} in the body to use variables.",
+    "placeholder": {
+      "key": "e.g. customer_name",
+      "label": "e.g. Customer Name",
+      "default": "Default value",
+      "options": "Comma-separated: Mr, Ms, Dr"
+    }
+  },
   "tag": {
     "title": "Tag Management",
     "newTag": "New Tag",

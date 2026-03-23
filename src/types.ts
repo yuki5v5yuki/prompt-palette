@@ -83,6 +83,36 @@ export interface UpdateTemplateInput {
   tagIds?: string[];
 }
 
+export interface CreateVariableInput {
+  templateId: string;
+  key: string;
+  label: string;
+  defaultValue?: string;
+  options?: string[];
+  sortOrder?: number;
+}
+
+export interface UpdateVariableInput {
+  key?: string;
+  label?: string;
+  defaultValue?: string;
+  options?: string[];
+  sortOrder?: number;
+}
+
+export interface VariableFormField {
+  key: string;
+  label: string;
+  defaultValue: string | null;
+  options: string[] | null;
+  isBuiltin: boolean;
+}
+
+export interface InterpolateRequest {
+  templateId: string;
+  values: Record<string, string>;
+}
+
 // --- IPC response types ---
 
 export interface HealthCheckResponse {

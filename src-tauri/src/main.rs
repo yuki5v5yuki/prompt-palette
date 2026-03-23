@@ -2,6 +2,7 @@
 
 mod commands;
 mod db;
+mod interpolation;
 mod migrations;
 mod models;
 mod paste;
@@ -73,6 +74,8 @@ fn main() {
 
             // --- Global Shortcut (Ctrl+Space) ---
             let shortcut: Shortcut = "ctrl+space".parse().expect("Invalid shortcut");
+            // Unregister first in case it's already registered from a previous session
+            let _ = app.global_shortcut().unregister(shortcut);
             let handle_for_shortcut = app.handle().clone();
             app.handle().global_shortcut().on_shortcut(
                 shortcut,
@@ -82,11 +85,6 @@ fn main() {
                     }
                 },
             )?;
-            // Unregister first in case it's already registered from a previous session
-            let _ = app.global_shortcut().unregister(shortcut);
-            if let Err(e) = app.global_shortcut().register(shortcut) {
-                eprintln!("Warning: Failed to register global shortcut: {}", e);
-            }
 
             Ok(())
         })
@@ -111,6 +109,15 @@ fn main() {
             commands::delete_template,
             commands::record_template_use,
             commands::list_templates_by_frequency,
+            // Variables
+            commands::list_variables,
+            commands::create_variable,
+            commands::update_variable,
+            commands::delete_variable,
+            commands::append_variable_option,
+            // Interpolation
+            commands::get_template_form_schema,
+            commands::interpolate_template,
             // Paste
             paste::paste_template,
         ])

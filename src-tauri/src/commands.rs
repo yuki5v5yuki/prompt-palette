@@ -1,7 +1,9 @@
 use serde_json::json;
 use tauri::AppHandle;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::db;
+use crate::interpolation;
 use crate::models::*;
 
 // ─── Health / Status ───
@@ -362,5 +364,211 @@ pub fn list_templates_by_frequency(app: AppHandle) -> Result<Vec<TemplateWithTag
         let tags = get_tags_for_template(&conn, &t.id)?;
         result.push(TemplateWithTags { template: t, tags });
     }
+    Ok(result)
+}
+
+// ─── Variables ───
+
+fn row_to_variable(row: &rusqlite::Row) -> rusqlite::Result<Variable> {
+    let options_json: Option<String> = row.get(5)?;
+    let options: Option<Vec<String>> = options_json
+        .and_then(|s| serde_json::from_str(&s).ok());
+    Ok(Variable {
+        id: row.get(0)?,
+        template_id: row.get(1)?,
+        key: row.get(2)?,
+        label: row.get(3)?,
+        default_value: row.get(4)?,
+        options,
+        sort_order: row.get(6)?,
+    })
+}
+
+#[tauri::command]
+pub fn list_variables(app: AppHandle, template_id: String) -> Result<Vec<Variable>, String> {
+    let conn = db::open(&app)?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, template_id, key, label, default_value, options, sort_order
+             FROM variables
+             WHERE template_id = ?1
+             ORDER BY sort_order, key",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([&template_id], row_to_variable)
+        .map_err(|e| e.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn create_variable(app: AppHandle, input: CreateVariableInput) -> Result<Variable, String> {
+    let conn = db::open(&app)?;
+    let id = ulid::Ulid::new().to_string();
+    let sort_order = input.sort_order.unwrap_or(0);
+    let options_json = input.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+
+    conn.execute(
+        "INSERT INTO variables (id, template_id, key, label, default_value, options, sort_order)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![id, input.template_id, input.key, input.label, input.default_value, options_json, sort_order],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(Variable {
+        id,
+        template_id: input.template_id,
+        key: input.key,
+        label: input.label,
+        default_value: input.default_value,
+        options: input.options,
+        sort_order,
+    })
+}
+
+#[tauri::command]
+pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -> Result<Variable, String> {
+    let conn = db::open(&app)?;
+    let current: Variable = conn
+        .query_row(
+            "SELECT id, template_id, key, label, default_value, options, sort_order FROM variables WHERE id = ?1",
+            [&id],
+            row_to_variable,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let key = input.key.unwrap_or(current.key);
+    let label = input.label.unwrap_or(current.label);
+    let default_value = input.default_value.or(current.default_value);
+    let options = input.options.or(current.options);
+    let sort_order = input.sort_order.unwrap_or(current.sort_order);
+    let options_json = options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+
+    conn.execute(
+        "UPDATE variables SET key = ?1, label = ?2, default_value = ?3, options = ?4, sort_order = ?5 WHERE id = ?6",
+        rusqlite::params![key, label, default_value, options_json, sort_order, id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(Variable {
+        id,
+        template_id: current.template_id,
+        key,
+        label,
+        default_value,
+        options,
+        sort_order,
+    })
+}
+
+#[tauri::command]
+pub fn delete_variable(app: AppHandle, id: String) -> Result<(), String> {
+    let conn = db::open(&app)?;
+    conn.execute("DELETE FROM variables WHERE id = ?1", [&id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Append a new option value to a variable's options list (for input history).
+#[tauri::command]
+pub fn append_variable_option(app: AppHandle, variable_id: String, value: String) -> Result<(), String> {
+    let conn = db::open(&app)?;
+    let current_options: Option<String> = conn
+        .query_row(
+            "SELECT options FROM variables WHERE id = ?1",
+            [&variable_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let mut opts: Vec<String> = current_options
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default();
+
+    if !value.is_empty() && !opts.contains(&value) {
+        opts.push(value);
+        let json = serde_json::to_string(&opts).map_err(|e| e.to_string())?;
+        conn.execute(
+            "UPDATE variables SET options = ?1 WHERE id = ?2",
+            rusqlite::params![json, variable_id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Get the form schema for a template (variables needed for input).
+#[tauri::command]
+pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<Vec<VariableFormField>, String> {
+    let conn = db::open(&app)?;
+
+    let body: String = conn
+        .query_row(
+            "SELECT body FROM templates WHERE id = ?1",
+            [&template_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let tokens = interpolation::extract_tokens(&body);
+
+    let variables = {
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, template_id, key, label, default_value, options, sort_order
+                 FROM variables WHERE template_id = ?1 ORDER BY sort_order",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([&template_id], row_to_variable)
+            .map_err(|e| e.to_string())?;
+        rows.collect::<Result<Vec<Variable>, _>>().map_err(|e| e.to_string())?
+    };
+
+    let mut fields = Vec::new();
+    for (_full, name, _filter) in &tokens {
+        if interpolation::is_builtin(name) || name.starts_with('#') || name.starts_with('/') {
+            continue;
+        }
+        if let Some(var) = variables.iter().find(|v| v.key == *name) {
+            fields.push(VariableFormField {
+                key: var.key.clone(),
+                label: var.label.clone(),
+                default_value: var.default_value.clone(),
+                options: var.options.clone(),
+                is_builtin: false,
+            });
+        } else {
+            fields.push(VariableFormField {
+                key: name.clone(),
+                label: name.clone(),
+                default_value: None,
+                options: None,
+                is_builtin: false,
+            });
+        }
+    }
+    Ok(fields)
+}
+
+/// Interpolate a template with provided variable values.
+#[tauri::command]
+pub fn interpolate_template(app: AppHandle, request: InterpolateRequest) -> Result<String, String> {
+    let conn = db::open(&app)?;
+
+    let body: String = conn
+        .query_row(
+            "SELECT body FROM templates WHERE id = ?1",
+            [&request.template_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let clipboard_content = app
+        .clipboard()
+        .read_text()
+        .unwrap_or_default();
+
+    let result = interpolation::interpolate(&body, &request.values, &clipboard_content);
     Ok(result)
 }

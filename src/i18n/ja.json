@@ -51,6 +51,24 @@
     },
     "empty": "カテゴリがありません。"
   },
+  "variable": {
+    "title": "変数定義",
+    "addVariable": "変数を追加",
+    "keyLabel": "変数キー",
+    "labelLabel": "表示ラベル",
+    "defaultLabel": "デフォルト値",
+    "optionsLabel": "選択肢",
+    "default": "初期値",
+    "options": "選択肢",
+    "detectedVars": "検出された変数",
+    "empty": "変数が定義されていません。本文に {{変数名}} を入れて変数を追加できます。",
+    "placeholder": {
+      "key": "例: customer_name",
+      "label": "例: お客様名",
+      "default": "デフォルト値",
+      "options": "カンマ区切り: 様, さん, 御中"
+    }
+  },
   "tag": {
     "title": "タグ管理",
     "newTag": "新規タグ",

@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Fuse from "fuse.js";
-import type { TemplateWithTags } from "../types";
-import { listTemplatesByFrequency, recordTemplateUse } from "../desktop";
+import type { TemplateWithTags, VariableFormField } from "../types";
+import {
+  listTemplatesByFrequency,
+  recordTemplateUse,
+  getTemplateFormSchema,
+  interpolateTemplate,
+  appendVariableOption,
+  listVariables,
+} from "../desktop";
 
 const fuseOptions = {
   keys: [
@@ -13,7 +20,10 @@ const fuseOptions = {
   includeScore: true,
 };
 
+type LauncherStep = "search" | "variables";
+
 export default function Launcher() {
+  const [step, setStep] = useState<LauncherStep>("search");
   const [query, setQuery] = useState("");
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
   const [results, setResults] = useState<TemplateWithTags[]>([]);
@@ -21,6 +31,13 @@ export default function Launcher() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const fuseRef = useRef<Fuse<TemplateWithTags> | null>(null);
+
+  // Variable input state
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateWithTags | null>(null);
+  const [formFields, setFormFields] = useState<VariableFormField[]>([]);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [activeFieldIndex, setActiveFieldIndex] = useState(0);
+  const formRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadTemplates = useCallback(async () => {
     const tpls = await listTemplatesByFrequency();
@@ -56,30 +73,102 @@ export default function Launcher() {
     item?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
+  // Focus first variable input when entering variable step
+  useEffect(() => {
+    if (step === "variables" && formRefs.current[0]) {
+      formRefs.current[0].focus();
+    }
+  }, [step]);
+
+  const resetLauncher = useCallback(() => {
+    setStep("search");
+    setQuery("");
+    setSelectedTemplate(null);
+    setFormFields([]);
+    setFormValues({});
+    setActiveFieldIndex(0);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  const hideLauncher = useCallback(async () => {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().hide();
+    } catch {}
+    resetLauncher();
+  }, [resetLauncher]);
+
+  const pasteText = useCallback(async (text: string) => {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("paste_template", { text });
+    } catch {
+      try {
+        const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
+        await writeText(text);
+      } catch {
+        navigator.clipboard.writeText(text);
+      }
+    }
+  }, []);
+
+  const saveInputHistory = useCallback(async (templateId: string, values: Record<string, string>) => {
+    const vars = await listVariables(templateId);
+    if (!vars) return;
+    for (const v of vars) {
+      const inputValue = values[v.key];
+      if (inputValue && inputValue.trim()) {
+        await appendVariableOption(v.id, inputValue.trim());
+      }
+    }
+  }, []);
+
   const selectTemplate = useCallback(
     async (template: TemplateWithTags) => {
-      // Record usage
-      await recordTemplateUse(template.id);
+      // Check if template has variables
+      const schema = await getTemplateFormSchema(template.id);
+      const fields = schema ?? [];
 
-      // Copy body to clipboard and trigger paste via Rust command
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("paste_template", { text: template.body });
-      } catch {
-        // Fallback: just copy to clipboard
-        try {
-          const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
-          await writeText(template.body);
-        } catch {
-          // Last resort
-          navigator.clipboard.writeText(template.body);
+      if (fields.length > 0) {
+        // Has variables — show variable input form
+        setSelectedTemplate(template);
+        setFormFields(fields);
+        const initial: Record<string, string> = {};
+        for (const f of fields) {
+          initial[f.key] = f.defaultValue ?? "";
         }
+        setFormValues(initial);
+        setActiveFieldIndex(0);
+        setStep("variables");
+      } else {
+        // No variables — direct paste
+        await recordTemplateUse(template.id);
+        await pasteText(template.body);
+        resetLauncher();
       }
     },
-    []
+    [pasteText, resetLauncher]
   );
 
-  const handleKeyDown = useCallback(
+  const submitVariables = useCallback(async () => {
+    if (!selectedTemplate) return;
+
+    await recordTemplateUse(selectedTemplate.id);
+
+    // Interpolate template with values
+    const text = await interpolateTemplate({
+      templateId: selectedTemplate.id,
+      values: formValues,
+    });
+
+    // Save input history
+    await saveInputHistory(selectedTemplate.id, formValues);
+
+    await pasteText(text ?? selectedTemplate.body);
+    resetLauncher();
+  }, [selectedTemplate, formValues, pasteText, resetLauncher, saveInputHistory]);
+
+  const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
         case "ArrowDown":
@@ -98,53 +187,145 @@ export default function Launcher() {
           break;
         case "Escape":
           e.preventDefault();
-          // Hide launcher window
-          import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
-            getCurrentWindow().hide();
-          }).catch(() => {});
+          hideLauncher();
           break;
       }
     },
-    [results, selectedIndex, selectTemplate]
+    [results, selectedIndex, selectTemplate, hideLauncher]
   );
 
-  return (
-    <div className="launcher" onKeyDown={handleKeyDown}>
-      <div className="launcher-search">
-        <input
-          ref={inputRef}
-          type="text"
-          className="launcher-input"
-          placeholder="テンプレートを検索..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoFocus
-        />
-      </div>
-      <div className="launcher-results" ref={listRef}>
-        {results.length === 0 && (
-          <div className="launcher-empty">一致するテンプレートがありません</div>
-        )}
-        {results.map((tpl, index) => (
-          <div
-            key={tpl.id}
-            className={`launcher-item ${index === selectedIndex ? "selected" : ""}`}
-            onClick={() => selectTemplate(tpl)}
-            onMouseEnter={() => setSelectedIndex(index)}
-          >
-            <div className="launcher-item-title">{tpl.title}</div>
-            {tpl.tags.length > 0 && (
-              <div className="launcher-item-tags">
-                {tpl.tags.map((tag) => (
-                  <span key={tag.id} className="launcher-tag">{tag.name}</span>
-                ))}
+  const handleVariableKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        resetLauncher();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeFieldIndex < formFields.length - 1) {
+          // Move to next field
+          const nextIdx = activeFieldIndex + 1;
+          setActiveFieldIndex(nextIdx);
+          formRefs.current[nextIdx]?.focus();
+        } else {
+          // Last field — submit
+          submitVariables();
+        }
+      } else if (e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        if (activeFieldIndex < formFields.length - 1) {
+          const nextIdx = activeFieldIndex + 1;
+          setActiveFieldIndex(nextIdx);
+          formRefs.current[nextIdx]?.focus();
+        }
+      } else if (e.key === "Tab" && e.shiftKey) {
+        e.preventDefault();
+        if (activeFieldIndex > 0) {
+          const prevIdx = activeFieldIndex - 1;
+          setActiveFieldIndex(prevIdx);
+          formRefs.current[prevIdx]?.focus();
+        }
+      }
+    },
+    [activeFieldIndex, formFields.length, submitVariables, resetLauncher]
+  );
+
+  // --- Search Step ---
+  if (step === "search") {
+    return (
+      <div className="launcher" onKeyDown={handleSearchKeyDown}>
+        <div className="launcher-search">
+          <input
+            ref={inputRef}
+            type="text"
+            className="launcher-input"
+            placeholder="テンプレートを検索..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="launcher-results" ref={listRef}>
+          {results.length === 0 && (
+            <div className="launcher-empty">一致するテンプレートがありません</div>
+          )}
+          {results.map((tpl, index) => (
+            <div
+              key={tpl.id}
+              className={`launcher-item ${index === selectedIndex ? "selected" : ""}`}
+              onClick={() => selectTemplate(tpl)}
+              onMouseEnter={() => setSelectedIndex(index)}
+            >
+              <div className="launcher-item-title">{tpl.title}</div>
+              {tpl.tags.length > 0 && (
+                <div className="launcher-item-tags">
+                  {tpl.tags.map((tag) => (
+                    <span key={tag.id} className="launcher-tag">{tag.name}</span>
+                  ))}
+                </div>
+              )}
+              <div className="launcher-item-preview">
+                {tpl.body.slice(0, 100)}{tpl.body.length > 100 ? "..." : ""}
               </div>
-            )}
-            <div className="launcher-item-preview">
-              {tpl.body.slice(0, 100)}{tpl.body.length > 100 ? "..." : ""}
             </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Variable Input Step ---
+  return (
+    <div className="launcher" onKeyDown={handleVariableKeyDown}>
+      <div className="launcher-var-header">
+        <button className="launcher-back-btn" onClick={resetLauncher}>
+          &larr;
+        </button>
+        <span className="launcher-var-title">{selectedTemplate?.title}</span>
+      </div>
+      <div className="launcher-var-form">
+        {formFields.map((field, idx) => (
+          <div key={field.key} className="launcher-var-field">
+            <label className="launcher-var-label">{field.label}</label>
+            {field.options && field.options.length > 0 ? (
+              <div className="combobox-wrapper">
+                <input
+                  ref={(el) => { formRefs.current[idx] = el; }}
+                  type="text"
+                  className="launcher-var-input"
+                  list={`datalist-${field.key}`}
+                  value={formValues[field.key] ?? ""}
+                  onChange={(e) =>
+                    setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  }
+                  onFocus={() => setActiveFieldIndex(idx)}
+                  placeholder={field.defaultValue ?? ""}
+                />
+                <datalist id={`datalist-${field.key}`}>
+                  {field.options.map((opt) => (
+                    <option key={opt} value={opt} />
+                  ))}
+                </datalist>
+              </div>
+            ) : (
+              <input
+                ref={(el) => { formRefs.current[idx] = el; }}
+                type="text"
+                className="launcher-var-input"
+                value={formValues[field.key] ?? ""}
+                onChange={(e) =>
+                  setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                }
+                onFocus={() => setActiveFieldIndex(idx)}
+                placeholder={field.defaultValue ?? ""}
+              />
+            )}
           </div>
         ))}
+      </div>
+      <div className="launcher-var-actions">
+        <button className="launcher-var-submit" onClick={submitVariables}>
+          確定 (Enter)
+        </button>
       </div>
     </div>
   );

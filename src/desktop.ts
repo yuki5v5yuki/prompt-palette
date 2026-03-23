@@ -4,11 +4,16 @@ import type {
   Category,
   Tag,
   TemplateWithTags,
+  Variable,
+  VariableFormField,
   CreateCategoryInput,
   UpdateCategoryInput,
   CreateTagInput,
   CreateTemplateInput,
   UpdateTemplateInput,
+  CreateVariableInput,
+  UpdateVariableInput,
+  InterpolateRequest,
 } from "./types";
 
 declare global {
@@ -94,3 +99,28 @@ export const recordTemplateUse = (id: string) =>
 
 export const listTemplatesByFrequency = () =>
   invokeCommand<TemplateWithTags[]>("list_templates_by_frequency");
+
+// --- Variables ---
+
+export const listVariables = (templateId: string) =>
+  invokeCommand<Variable[]>("list_variables", { templateId });
+
+export const createVariable = (input: CreateVariableInput) =>
+  invokeCommand<Variable>("create_variable", { input });
+
+export const updateVariable = (id: string, input: UpdateVariableInput) =>
+  invokeCommand<Variable>("update_variable", { id, input });
+
+export const deleteVariable = (id: string) =>
+  invokeCommand<void>("delete_variable", { id });
+
+export const appendVariableOption = (variableId: string, value: string) =>
+  invokeCommand<void>("append_variable_option", { variableId, value });
+
+// --- Interpolation ---
+
+export const getTemplateFormSchema = (templateId: string) =>
+  invokeCommand<VariableFormField[]>("get_template_form_schema", { templateId });
+
+export const interpolateTemplate = (request: InterpolateRequest) =>
+  invokeCommand<string>("interpolate_template", { request });
