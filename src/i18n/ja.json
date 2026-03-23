@@ -1,0 +1,23 @@
+{
+  "app": {
+    "name": "Prompt Palette",
+    "version": "v0.1.0",
+    "description": "どこでも使えるテキスト挿入ランチャー"
+  },
+  "phase0": {
+    "title": "Phase 0 — 動作確認",
+    "testIpc": "IPC接続テスト",
+    "testDb": "データベーステスト",
+    "status": "ステータス",
+    "schemaVersion": "スキーマバージョン",
+    "tableCount": "テーブル数",
+    "waiting": "テストボタンを押してください",
+    "success": "成功",
+    "error": "エラー"
+  },
+  "common": {
+    "language": "言語",
+    "japanese": "日本語",
+    "english": "English"
+  }
+}

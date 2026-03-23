@@ -1,0 +1,23 @@
+{
+  "app": {
+    "name": "Prompt Palette",
+    "version": "v0.1.0",
+    "description": "Global text insertion launcher"
+  },
+  "phase0": {
+    "title": "Phase 0 — Verification",
+    "testIpc": "Test IPC Bridge",
+    "testDb": "Test Database",
+    "status": "Status",
+    "schemaVersion": "Schema Version",
+    "tableCount": "Table Count",
+    "waiting": "Press a test button",
+    "success": "Success",
+    "error": "Error"
+  },
+  "common": {
+    "language": "Language",
+    "japanese": "日本語",
+    "english": "English"
+  }
+}
