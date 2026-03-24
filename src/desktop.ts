@@ -17,6 +17,11 @@ import type {
   CreateVariableInput,
   UpdateVariableInput,
   InterpolateRequest,
+  Bundle,
+  ExportRequest,
+  ImportPreview,
+  ImportRequest,
+  ImportResult,
 } from "./types";
 
 declare global {
@@ -55,6 +60,12 @@ export const healthCheck = () =>
 
 export const getDbStatus = () =>
   invokeCommand<DbStatusResponse>("get_db_status");
+
+export const isOnboarded = () =>
+  invokeCommand<boolean>("is_onboarded");
+
+export const seedSampleData = () =>
+  invokeCommand<void>("seed_sample_data");
 
 // --- Categories ---
 
@@ -145,3 +156,22 @@ export const getTemplateFormSchema = (templateId: string) =>
 
 export const interpolateTemplate = (request: InterpolateRequest) =>
   invokeCommand<string>("interpolate_template", { request });
+
+// --- Export / Import ---
+
+export const exportBundle = (request: ExportRequest) =>
+  invokeCommand<Bundle>("export_bundle", { request });
+
+export const previewImport = (bundleJson: string) =>
+  invokeCommand<ImportPreview>("preview_import", { bundleJson });
+
+export const importBundle = (request: ImportRequest) =>
+  invokeCommand<ImportResult>("import_bundle", { request });
+
+// --- Settings ---
+
+export const getSetting = (key: string) =>
+  invokeCommand<string>("get_setting", { key });
+
+export const setGlobalHotkey = (shortcut: string) =>
+  invokeCommand<void>("set_global_hotkey", { shortcut });

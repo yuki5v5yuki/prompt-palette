@@ -2,7 +2,7 @@ use rusqlite::Connection;
 
 /// All migrations in order. Each function upgrades from version N-1 to N.
 pub fn get_migrations() -> Vec<fn(&Connection) -> rusqlite::Result<()>> {
-    vec![migrate_v1, migrate_v2, migrate_v3]
+    vec![migrate_v1, migrate_v2, migrate_v3, migrate_v4]
 }
 
 /// V1: Initial schema — 5 data tables + schema_version
@@ -145,6 +145,20 @@ fn migrate_v3(conn: &Connection) -> rusqlite::Result<()> {
         ALTER TABLE variables_new RENAME TO variables;
 
         CREATE INDEX idx_variables_package ON variables(package_id);
+        ",
+    )
+}
+
+/// V4: Add settings table for user preferences (e.g. global hotkey)
+fn migrate_v4(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "
+        CREATE TABLE settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
+        INSERT INTO settings (key, value) VALUES ('global_hotkey', 'ctrl+space');
         ",
     )
 }

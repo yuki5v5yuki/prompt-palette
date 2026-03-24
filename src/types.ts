@@ -141,6 +141,89 @@ export interface InterpolateRequest {
   values: Record<string, string>;
 }
 
+// --- Export / Import types ---
+
+export interface Bundle {
+  format: string;
+  version: string;
+  exportedAt: string;
+  pack: BundlePack;
+}
+
+export interface BundlePack {
+  name: string;
+  description: string | null;
+  categories: BundleCategory[];
+  tags: BundleTag[];
+  variablePackages: BundleVariablePackage[];
+  templates: BundleTemplate[];
+}
+
+export interface BundleCategory {
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface BundleTag {
+  name: string;
+}
+
+export interface BundleVariablePackage {
+  name: string;
+  description: string | null;
+  variables: BundleVariable[];
+}
+
+export interface BundleVariable {
+  key: string;
+  label: string;
+  defaultValue: string | null;
+  options: string[] | null;
+  allowFreeText: boolean;
+}
+
+export interface BundleTemplate {
+  title: string;
+  body: string;
+  category: string | null;
+  tags: string[];
+  variablePackages: string[];
+}
+
+export interface ExportRequest {
+  templateIds?: string[];
+  packName: string;
+  packDescription?: string;
+}
+
+export interface ImportPreview {
+  packName: string;
+  packDescription: string | null;
+  categories: ImportPreviewItem[];
+  tags: ImportPreviewItem[];
+  variablePackages: ImportPreviewItem[];
+  templates: ImportPreviewItem[];
+}
+
+export interface ImportPreviewItem {
+  name: string;
+  conflict: boolean;
+}
+
+export interface ImportRequest {
+  bundleJson: string;
+  conflictStrategy: "skip" | "overwrite" | "keepBoth";
+}
+
+export interface ImportResult {
+  importedCategories: number;
+  importedTags: number;
+  importedPackages: number;
+  importedTemplates: number;
+  skipped: number;
+}
+
 // --- IPC response types ---
 
 export interface HealthCheckResponse {

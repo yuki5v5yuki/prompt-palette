@@ -49,7 +49,7 @@ fn main() {
                 .on_menu_event(move |app, event| {
                     match event.id().as_ref() {
                         "show_launcher" => {
-                            toggle_launcher(app);
+                            commands::toggle_launcher(app);
                         }
                         "show_main" => {
                             if let Some(main_win) = app.get_webview_window("main") {
@@ -66,22 +66,32 @@ fn main() {
                 .on_tray_icon_event(|tray, event| {
                     if let tauri::tray::TrayIconEvent::Click { button, .. } = event {
                         if button == tauri::tray::MouseButton::Left {
-                            toggle_launcher(tray.app_handle());
+                            commands::toggle_launcher(tray.app_handle());
                         }
                     }
                 })
                 .build(app)?;
 
-            // --- Global Shortcut (Ctrl+Space) ---
-            let shortcut: Shortcut = "ctrl+space".parse().expect("Invalid shortcut");
-            // Unregister first in case it's already registered from a previous session
+            // --- Global Shortcut (read saved hotkey or fallback to Ctrl+Space) ---
+            let saved_hotkey = {
+                let conn = db::open(&handle).unwrap_or_else(|_| panic!("Failed to open DB"));
+                conn.query_row(
+                    "SELECT value FROM settings WHERE key = 'global_hotkey'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .unwrap_or_else(|_| "ctrl+space".to_string())
+            };
+            let shortcut: Shortcut = saved_hotkey.parse().unwrap_or_else(|_| {
+                "ctrl+space".parse().expect("Invalid fallback shortcut")
+            });
             let _ = app.global_shortcut().unregister(shortcut);
             let handle_for_shortcut = app.handle().clone();
             app.handle().global_shortcut().on_shortcut(
                 shortcut,
                 move |_app, _shortcut, event| {
                     if event.state == ShortcutState::Pressed {
-                        toggle_launcher(&handle_for_shortcut);
+                        commands::toggle_launcher(&handle_for_shortcut);
                     }
                 },
             )?;
@@ -89,9 +99,11 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            // Health / Status
+            // Health / Status / Onboarding
             commands::health_check,
             commands::get_db_status,
+            commands::is_onboarded,
+            commands::seed_sample_data,
             // Categories
             commands::list_categories,
             commands::create_category,
@@ -124,21 +136,17 @@ fn main() {
             // Interpolation
             commands::get_template_form_schema,
             commands::interpolate_template,
+            // Export / Import
+            commands::export_bundle,
+            commands::preview_import,
+            commands::import_bundle,
             // Paste
             paste::paste_template,
+            // Settings
+            commands::get_setting,
+            commands::set_global_hotkey,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Prompt Palette");
 }
 
-fn toggle_launcher(app: &tauri::AppHandle) {
-    if let Some(launcher) = app.get_webview_window("launcher") {
-        if launcher.is_visible().unwrap_or(false) {
-            let _ = launcher.hide();
-        } else {
-            let _ = launcher.center();
-            let _ = launcher.show();
-            let _ = launcher.set_focus();
-        }
-    }
-}

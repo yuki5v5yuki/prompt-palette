@@ -1,12 +1,13 @@
 use serde_json::json;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::db;
 use crate::interpolation;
 use crate::models::*;
 
-// ─── Health / Status ───
+// ─── Health / Status / Onboarding ───
 
 #[tauri::command]
 pub fn health_check() -> Result<serde_json::Value, String> {
@@ -25,6 +26,92 @@ pub fn get_db_status(app: AppHandle) -> Result<serde_json::Value, String> {
         "schemaVersion": schema_version,
         "tableCount": table_count
     }))
+}
+
+/// Check if onboarding (sample data) has already been loaded.
+#[tauri::command]
+pub fn is_onboarded(app: AppHandle) -> Result<bool, String> {
+    let conn = db::open(&app)?;
+    let count: i32 = conn
+        .query_row("SELECT COUNT(*) FROM templates", [], |row| row.get(0))
+        .map_err(|e| e.to_string())?;
+    Ok(count > 0)
+}
+
+/// Insert sample templates for first-time users.
+#[tauri::command]
+pub fn seed_sample_data(app: AppHandle) -> Result<(), String> {
+    let conn = db::open(&app)?;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Sample category
+    let cat_id = ulid::Ulid::new().to_string();
+    conn.execute(
+        "INSERT INTO categories (id, name, icon, color, sort_order) VALUES (?1, ?2, ?3, ?4, 0)",
+        rusqlite::params![cat_id, "Sample", "📋", "#ffd700"],
+    ).map_err(|e| e.to_string())?;
+
+    // Sample tag
+    let tag_id = ulid::Ulid::new().to_string();
+    conn.execute(
+        "INSERT INTO tags (id, name) VALUES (?1, ?2)",
+        rusqlite::params![tag_id, "sample"],
+    ).map_err(|e| e.to_string())?;
+
+    // Sample variable package
+    let pkg_id = ulid::Ulid::new().to_string();
+    conn.execute(
+        "INSERT INTO variable_packages (id, name, description, sort_order, created_at, updated_at)
+         VALUES (?1, ?2, ?3, 0, ?4, ?5)",
+        rusqlite::params![pkg_id, "Contact Info", "Basic contact information", now, now],
+    ).map_err(|e| e.to_string())?;
+
+    // Variables for package
+    let var_name_id = ulid::Ulid::new().to_string();
+    conn.execute(
+        "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
+         VALUES (?1, ?2, 'name', 'Name', NULL, NULL, 0, 1)",
+        rusqlite::params![var_name_id, pkg_id],
+    ).map_err(|e| e.to_string())?;
+
+    let var_suffix_id = ulid::Ulid::new().to_string();
+    conn.execute(
+        "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
+         VALUES (?1, ?2, 'suffix', 'Suffix', '様', ?3, 1, 1)",
+        rusqlite::params![var_suffix_id, pkg_id, serde_json::to_string(&vec!["様", "さん", "御中"]).unwrap()],
+    ).map_err(|e| e.to_string())?;
+
+    // Sample templates
+    let samples = vec![
+        ("Greeting (挨拶)", "{{name}}{{suffix}}\n\nお世話になっております。\n{{@today}}"),
+        ("Thank You (お礼)", "{{name}}{{suffix}}\n\nご対応ありがとうございます。\n引き続きよろしくお願いいたします。"),
+        ("Quick Note (メモ)", "【メモ】{{@now}}\n\n"),
+    ];
+
+    for (i, (title, body)) in samples.iter().enumerate() {
+        let tmpl_id = ulid::Ulid::new().to_string();
+        conn.execute(
+            "INSERT INTO templates (id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, NULL, 0, NULL, ?5, ?6, ?7)",
+            rusqlite::params![tmpl_id, title, body, cat_id, i as i32, now, now],
+        ).map_err(|e| e.to_string())?;
+
+        // Link tag
+        conn.execute(
+            "INSERT INTO template_tags (template_id, tag_id) VALUES (?1, ?2)",
+            rusqlite::params![tmpl_id, tag_id],
+        ).map_err(|e| e.to_string())?;
+
+        // Link variable package (only for templates that use variables)
+        if body.contains("{{name}}") {
+            conn.execute(
+                "INSERT INTO template_variable_packages (template_id, package_id) VALUES (?1, ?2)",
+                rusqlite::params![tmpl_id, pkg_id],
+            ).map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
 }
 
 // ─── Categories ───
@@ -736,4 +823,500 @@ pub fn interpolate_template(app: AppHandle, request: InterpolateRequest) -> Resu
 
     let result = interpolation::interpolate(&body, &request.values, &clipboard_content);
     Ok(result)
+}
+
+// ─── Export / Import ───
+
+/// Export selected templates (or all) as a .ppb.json bundle.
+#[tauri::command]
+pub fn export_bundle(app: AppHandle, request: ExportRequest) -> Result<Bundle, String> {
+    let conn = db::open(&app)?;
+
+    // Determine which templates to export
+    let templates: Vec<Template> = if let Some(ids) = &request.template_ids {
+        if ids.is_empty() {
+            return Err("No template IDs provided".into());
+        }
+        let placeholders: Vec<String> = ids.iter().enumerate().map(|(i, _)| format!("?{}", i + 1)).collect();
+        let sql = format!(
+            "SELECT id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at
+             FROM templates WHERE id IN ({})",
+            placeholders.join(",")
+        );
+        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+        let params: Vec<&dyn rusqlite::types::ToSql> = ids.iter().map(|id| id as &dyn rusqlite::types::ToSql).collect();
+        let rows = stmt.query_map(params.as_slice(), row_to_template).map_err(|e| e.to_string())?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+    } else {
+        let mut stmt = conn.prepare(
+            "SELECT id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at FROM templates ORDER BY sort_order, title"
+        ).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], row_to_template).map_err(|e| e.to_string())?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+    };
+
+    // Collect related data
+    let mut category_names = std::collections::HashSet::new();
+    let mut tag_names = std::collections::HashSet::new();
+    let mut package_names = std::collections::HashSet::new();
+
+    let mut bundle_templates = Vec::new();
+    for t in &templates {
+        // Get category name
+        let cat_name: Option<String> = if let Some(cat_id) = &t.category_id {
+            conn.query_row("SELECT name FROM categories WHERE id = ?1", [cat_id], |row| row.get(0)).ok()
+        } else {
+            None
+        };
+        if let Some(ref name) = cat_name {
+            category_names.insert(name.clone());
+        }
+
+        // Get tag names
+        let tags = get_tags_for_template(&conn, &t.id)?;
+        let tag_name_list: Vec<String> = tags.iter().map(|tg| {
+            tag_names.insert(tg.name.clone());
+            tg.name.clone()
+        }).collect();
+
+        // Get variable package names
+        let packages = get_packages_for_template(&conn, &t.id)?;
+        let pkg_name_list: Vec<String> = packages.iter().map(|p| {
+            package_names.insert(p.name.clone());
+            p.name.clone()
+        }).collect();
+
+        bundle_templates.push(BundleTemplate {
+            title: t.title.clone(),
+            body: t.body.clone(),
+            category: cat_name,
+            tags: tag_name_list,
+            variable_packages: pkg_name_list,
+        });
+    }
+
+    // Build bundle categories
+    let bundle_categories: Vec<BundleCategory> = {
+        let mut result = Vec::new();
+        for name in &category_names {
+            if let Ok(cat) = conn.query_row(
+                "SELECT icon, color FROM categories WHERE name = ?1", [name],
+                |row| Ok((row.get::<_, Option<String>>(0)?, row.get::<_, Option<String>>(1)?))
+            ) {
+                result.push(BundleCategory { name: name.clone(), icon: cat.0, color: cat.1 });
+            }
+        }
+        result
+    };
+
+    // Build bundle tags
+    let bundle_tags: Vec<BundleTag> = tag_names.into_iter().map(|name| BundleTag { name }).collect();
+
+    // Build bundle variable packages (with variables)
+    let bundle_packages: Vec<BundleVariablePackage> = {
+        let mut result = Vec::new();
+        for name in &package_names {
+            if let Ok((pkg_id, desc)) = conn.query_row(
+                "SELECT id, description FROM variable_packages WHERE name = ?1", [name],
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
+            ) {
+                let mut stmt = conn.prepare(
+                    "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text
+                     FROM variables WHERE package_id = ?1 ORDER BY sort_order"
+                ).map_err(|e| e.to_string())?;
+                let vars: Vec<Variable> = stmt.query_map([&pkg_id], row_to_variable)
+                    .map_err(|e| e.to_string())?
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| e.to_string())?;
+                let bundle_vars: Vec<BundleVariable> = vars.into_iter().map(|v| BundleVariable {
+                    key: v.key,
+                    label: v.label,
+                    default_value: v.default_value,
+                    options: v.options,
+                    allow_free_text: v.allow_free_text,
+                }).collect();
+                result.push(BundleVariablePackage { name: name.clone(), description: desc, variables: bundle_vars });
+            }
+        }
+        result
+    };
+
+    Ok(Bundle {
+        format: "prompt-palette-bundle".into(),
+        version: "1.0.0".into(),
+        exported_at: chrono::Utc::now().to_rfc3339(),
+        pack: BundlePack {
+            name: request.pack_name,
+            description: request.pack_description,
+            categories: bundle_categories,
+            tags: bundle_tags,
+            variable_packages: bundle_packages,
+            templates: bundle_templates,
+        },
+    })
+}
+
+/// Preview what an import will do (detect conflicts).
+#[tauri::command]
+pub fn preview_import(app: AppHandle, bundle_json: String) -> Result<ImportPreview, String> {
+    let bundle: Bundle = serde_json::from_str(&bundle_json).map_err(|e| format!("Invalid bundle JSON: {}", e))?;
+    if bundle.format != "prompt-palette-bundle" {
+        return Err("Invalid bundle format".into());
+    }
+    let conn = db::open(&app)?;
+
+    let categories: Vec<ImportPreviewItem> = bundle.pack.categories.iter().map(|c| {
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) FROM categories WHERE name = ?1", [&c.name], |row| row.get::<_, i32>(0)
+        ).unwrap_or(0) > 0;
+        ImportPreviewItem { name: c.name.clone(), conflict: exists }
+    }).collect();
+
+    let tags: Vec<ImportPreviewItem> = bundle.pack.tags.iter().map(|t| {
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) FROM tags WHERE name = ?1", [&t.name], |row| row.get::<_, i32>(0)
+        ).unwrap_or(0) > 0;
+        ImportPreviewItem { name: t.name.clone(), conflict: exists }
+    }).collect();
+
+    let variable_packages: Vec<ImportPreviewItem> = bundle.pack.variable_packages.iter().map(|p| {
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) FROM variable_packages WHERE name = ?1", [&p.name], |row| row.get::<_, i32>(0)
+        ).unwrap_or(0) > 0;
+        ImportPreviewItem { name: p.name.clone(), conflict: exists }
+    }).collect();
+
+    let templates: Vec<ImportPreviewItem> = bundle.pack.templates.iter().map(|t| {
+        let exists: bool = conn.query_row(
+            "SELECT COUNT(*) FROM templates WHERE title = ?1", [&t.title], |row| row.get::<_, i32>(0)
+        ).unwrap_or(0) > 0;
+        ImportPreviewItem { name: t.title.clone(), conflict: exists }
+    }).collect();
+
+    Ok(ImportPreview {
+        pack_name: bundle.pack.name,
+        pack_description: bundle.pack.description,
+        categories,
+        tags,
+        variable_packages,
+        templates,
+    })
+}
+
+/// Import a bundle with conflict resolution.
+#[tauri::command]
+pub fn import_bundle(app: AppHandle, request: ImportRequest) -> Result<serde_json::Value, String> {
+    let bundle: Bundle = serde_json::from_str(&request.bundle_json)
+        .map_err(|e| format!("Invalid bundle JSON: {}", e))?;
+    if bundle.format != "prompt-palette-bundle" {
+        return Err("Invalid bundle format".into());
+    }
+    let conn = db::open(&app)?;
+    let strategy = &request.conflict_strategy;
+
+    let mut imported_categories = 0u32;
+    let mut imported_tags = 0u32;
+    let mut imported_packages = 0u32;
+    let mut imported_templates = 0u32;
+    let mut skipped = 0u32;
+
+    // 1. Import categories
+    let mut category_name_to_id: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    // Load existing categories
+    {
+        let mut stmt = conn.prepare("SELECT id, name FROM categories").map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(1)?, row.get::<_, String>(0)?)))
+            .map_err(|e| e.to_string())?;
+        for row in rows {
+            let (name, id) = row.map_err(|e| e.to_string())?;
+            category_name_to_id.insert(name, id);
+        }
+    }
+    for cat in &bundle.pack.categories {
+        if let Some(existing_id) = category_name_to_id.get(&cat.name) {
+            match strategy {
+                ConflictStrategy::Skip => { skipped += 1; }
+                ConflictStrategy::Overwrite => {
+                    conn.execute(
+                        "UPDATE categories SET icon = ?1, color = ?2 WHERE id = ?3",
+                        rusqlite::params![cat.icon, cat.color, existing_id],
+                    ).map_err(|e| e.to_string())?;
+                    imported_categories += 1;
+                }
+                ConflictStrategy::KeepBoth => {
+                    let new_name = format!("{} (imported)", cat.name);
+                    let id = ulid::Ulid::new().to_string();
+                    conn.execute(
+                        "INSERT INTO categories (id, name, icon, color, sort_order) VALUES (?1, ?2, ?3, ?4, 0)",
+                        rusqlite::params![id, new_name, cat.icon, cat.color],
+                    ).map_err(|e| e.to_string())?;
+                    category_name_to_id.insert(new_name, id);
+                    imported_categories += 1;
+                }
+            }
+        } else {
+            let id = ulid::Ulid::new().to_string();
+            conn.execute(
+                "INSERT INTO categories (id, name, icon, color, sort_order) VALUES (?1, ?2, ?3, ?4, 0)",
+                rusqlite::params![id, cat.name, cat.icon, cat.color],
+            ).map_err(|e| e.to_string())?;
+            category_name_to_id.insert(cat.name.clone(), id);
+            imported_categories += 1;
+        }
+    }
+
+    // 2. Import tags
+    let mut tag_name_to_id: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    {
+        let mut stmt = conn.prepare("SELECT id, name FROM tags").map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(1)?, row.get::<_, String>(0)?)))
+            .map_err(|e| e.to_string())?;
+        for row in rows {
+            let (name, id) = row.map_err(|e| e.to_string())?;
+            tag_name_to_id.insert(name, id);
+        }
+    }
+    for tag in &bundle.pack.tags {
+        if tag_name_to_id.contains_key(&tag.name) {
+            if *strategy != ConflictStrategy::KeepBoth {
+                skipped += 1;
+            } else {
+                let new_name = format!("{} (imported)", tag.name);
+                let id = ulid::Ulid::new().to_string();
+                conn.execute("INSERT INTO tags (id, name) VALUES (?1, ?2)", rusqlite::params![id, new_name])
+                    .map_err(|e| e.to_string())?;
+                tag_name_to_id.insert(new_name, id);
+                imported_tags += 1;
+            }
+        } else {
+            let id = ulid::Ulid::new().to_string();
+            conn.execute("INSERT INTO tags (id, name) VALUES (?1, ?2)", rusqlite::params![id, tag.name])
+                .map_err(|e| e.to_string())?;
+            tag_name_to_id.insert(tag.name.clone(), id);
+            imported_tags += 1;
+        }
+    }
+
+    // 3. Import variable packages
+    let mut package_name_to_id: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+    {
+        let mut stmt = conn.prepare("SELECT id, name FROM variable_packages").map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, String>(1)?, row.get::<_, String>(0)?)))
+            .map_err(|e| e.to_string())?;
+        for row in rows {
+            let (name, id) = row.map_err(|e| e.to_string())?;
+            package_name_to_id.insert(name, id);
+        }
+    }
+    for pkg in &bundle.pack.variable_packages {
+        let now = chrono::Utc::now().to_rfc3339();
+        if let Some(existing_id) = package_name_to_id.get(&pkg.name).cloned() {
+            match strategy {
+                ConflictStrategy::Skip => { skipped += 1; }
+                ConflictStrategy::Overwrite => {
+                    conn.execute(
+                        "UPDATE variable_packages SET description = ?1, updated_at = ?2 WHERE id = ?3",
+                        rusqlite::params![pkg.description, now, existing_id],
+                    ).map_err(|e| e.to_string())?;
+                    // Delete old variables and re-insert
+                    conn.execute("DELETE FROM variables WHERE package_id = ?1", [&existing_id])
+                        .map_err(|e| e.to_string())?;
+                    for (i, v) in pkg.variables.iter().enumerate() {
+                        let vid = ulid::Ulid::new().to_string();
+                        let opts_json = v.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+                        conn.execute(
+                            "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
+                             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                            rusqlite::params![vid, existing_id, v.key, v.label, v.default_value, opts_json, i as i32, v.allow_free_text as i32],
+                        ).map_err(|e| e.to_string())?;
+                    }
+                    imported_packages += 1;
+                }
+                ConflictStrategy::KeepBoth => {
+                    let new_name = format!("{} (imported)", pkg.name);
+                    let id = ulid::Ulid::new().to_string();
+                    conn.execute(
+                        "INSERT INTO variable_packages (id, name, description, sort_order, created_at, updated_at)
+                         VALUES (?1, ?2, ?3, 0, ?4, ?5)",
+                        rusqlite::params![id, new_name, pkg.description, now, now],
+                    ).map_err(|e| e.to_string())?;
+                    for (i, v) in pkg.variables.iter().enumerate() {
+                        let vid = ulid::Ulid::new().to_string();
+                        let opts_json = v.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+                        conn.execute(
+                            "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
+                             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                            rusqlite::params![vid, id, v.key, v.label, v.default_value, opts_json, i as i32, v.allow_free_text as i32],
+                        ).map_err(|e| e.to_string())?;
+                    }
+                    package_name_to_id.insert(new_name, id);
+                    imported_packages += 1;
+                }
+            }
+        } else {
+            let id = ulid::Ulid::new().to_string();
+            conn.execute(
+                "INSERT INTO variable_packages (id, name, description, sort_order, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, 0, ?4, ?5)",
+                rusqlite::params![id, pkg.name, pkg.description, now, now],
+            ).map_err(|e| e.to_string())?;
+            for (i, v) in pkg.variables.iter().enumerate() {
+                let vid = ulid::Ulid::new().to_string();
+                let opts_json = v.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
+                conn.execute(
+                    "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    rusqlite::params![vid, id, v.key, v.label, v.default_value, opts_json, i as i32, v.allow_free_text as i32],
+                ).map_err(|e| e.to_string())?;
+            }
+            package_name_to_id.insert(pkg.name.clone(), id);
+            imported_packages += 1;
+        }
+    }
+
+    // 4. Import templates
+    for tmpl in &bundle.pack.templates {
+        let now = chrono::Utc::now().to_rfc3339();
+        let existing: Option<String> = conn.query_row(
+            "SELECT id FROM templates WHERE title = ?1", [&tmpl.title], |row| row.get(0)
+        ).ok();
+
+        let template_id: String;
+
+        if let Some(existing_id) = existing {
+            match strategy {
+                ConflictStrategy::Skip => { skipped += 1; continue; }
+                ConflictStrategy::Overwrite => {
+                    let cat_id = tmpl.category.as_ref().and_then(|name| category_name_to_id.get(name));
+                    conn.execute(
+                        "UPDATE templates SET body = ?1, category_id = ?2, updated_at = ?3 WHERE id = ?4",
+                        rusqlite::params![tmpl.body, cat_id, now, existing_id],
+                    ).map_err(|e| e.to_string())?;
+                    template_id = existing_id;
+                }
+                ConflictStrategy::KeepBoth => {
+                    let new_title = format!("{} (imported)", tmpl.title);
+                    let cat_id = tmpl.category.as_ref().and_then(|name| category_name_to_id.get(name));
+                    template_id = ulid::Ulid::new().to_string();
+                    conn.execute(
+                        "INSERT INTO templates (id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at)
+                         VALUES (?1, ?2, ?3, ?4, NULL, 0, NULL, 0, ?5, ?6)",
+                        rusqlite::params![template_id, new_title, tmpl.body, cat_id, now, now],
+                    ).map_err(|e| e.to_string())?;
+                }
+            }
+        } else {
+            let cat_id = tmpl.category.as_ref().and_then(|name| category_name_to_id.get(name));
+            template_id = ulid::Ulid::new().to_string();
+            conn.execute(
+                "INSERT INTO templates (id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, NULL, 0, NULL, 0, ?5, ?6)",
+                rusqlite::params![template_id, tmpl.title, tmpl.body, cat_id, now, now],
+            ).map_err(|e| e.to_string())?;
+        }
+
+        // Set tags
+        conn.execute("DELETE FROM template_tags WHERE template_id = ?1", [&template_id])
+            .map_err(|e| e.to_string())?;
+        for tag_name in &tmpl.tags {
+            if let Some(tag_id) = tag_name_to_id.get(tag_name) {
+                conn.execute(
+                    "INSERT OR IGNORE INTO template_tags (template_id, tag_id) VALUES (?1, ?2)",
+                    rusqlite::params![template_id, tag_id],
+                ).map_err(|e| e.to_string())?;
+            }
+        }
+
+        // Set variable packages
+        conn.execute("DELETE FROM template_variable_packages WHERE template_id = ?1", [&template_id])
+            .map_err(|e| e.to_string())?;
+        for pkg_name in &tmpl.variable_packages {
+            if let Some(pkg_id) = package_name_to_id.get(pkg_name) {
+                conn.execute(
+                    "INSERT OR IGNORE INTO template_variable_packages (template_id, package_id) VALUES (?1, ?2)",
+                    rusqlite::params![template_id, pkg_id],
+                ).map_err(|e| e.to_string())?;
+            }
+        }
+        imported_templates += 1;
+    }
+
+    Ok(json!({
+        "importedCategories": imported_categories,
+        "importedTags": imported_tags,
+        "importedPackages": imported_packages,
+        "importedTemplates": imported_templates,
+        "skipped": skipped,
+    }))
+}
+
+// ─── Launcher Toggle ───
+
+pub(crate) fn toggle_launcher(app: &tauri::AppHandle) {
+    if let Some(launcher) = app.get_webview_window("launcher") {
+        if launcher.is_visible().unwrap_or(false) {
+            let _ = launcher.hide();
+        } else {
+            let _ = launcher.center();
+            let _ = launcher.show();
+            let _ = launcher.set_focus();
+        }
+    }
+}
+
+// ─── Settings ───
+
+#[tauri::command]
+pub fn get_setting(app: AppHandle, key: String) -> Result<Option<String>, String> {
+    let conn = db::open(&app)?;
+    let result = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = ?1",
+            rusqlite::params![key],
+            |row| row.get(0),
+        )
+        .ok();
+    Ok(result)
+}
+
+#[tauri::command]
+pub fn set_global_hotkey(app: AppHandle, shortcut: String) -> Result<(), String> {
+    // Validate the new shortcut
+    let new_shortcut: Shortcut = shortcut
+        .parse()
+        .map_err(|_| format!("Invalid shortcut: {}", shortcut))?;
+
+    // Read the old shortcut from DB and unregister it
+    let conn = db::open(&app)?;
+    let old_shortcut_str: String = conn
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'global_hotkey'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or_else(|_| "ctrl+space".to_string());
+
+    if let Ok(old_shortcut) = old_shortcut_str.parse::<Shortcut>() {
+        let _ = app.global_shortcut().unregister(old_shortcut);
+    }
+
+    // Register the new shortcut
+    let handle = app.clone();
+    app.global_shortcut()
+        .on_shortcut(new_shortcut, move |_app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                toggle_launcher(&handle);
+            }
+        })
+        .map_err(|e| format!("Failed to register shortcut: {}", e))?;
+
+    // Persist to DB
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES ('global_hotkey', ?1)
+         ON CONFLICT(key) DO UPDATE SET value = ?1",
+        rusqlite::params![shortcut],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

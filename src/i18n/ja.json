@@ -16,13 +16,15 @@
     "search": "検索...",
     "noData": "データがありません",
     "confirm": "確認",
-    "confirmDelete": "本当に削除しますか？"
+    "confirmDelete": "本当に削除しますか？",
+    "loading": "読み込み中..."
   },
   "nav": {
     "templates": "テンプレート",
     "categories": "カテゴリ",
     "tags": "タグ",
     "packages": "変数パッケージ",
+    "importExport": "インポート/エクスポート",
     "settings": "設定"
   },
   "template": {
@@ -101,5 +103,70 @@
       "name": "タグ名を入力"
     },
     "empty": "タグがありません。"
+  },
+  "importExport": {
+    "title": "インポート / エクスポート",
+    "export": "エクスポート",
+    "import": "インポート",
+    "packName": "パック名",
+    "packNamePlaceholder": "パック名を入力",
+    "packDescription": "説明",
+    "packDescriptionPlaceholder": "パックの説明（省略可）",
+    "selectTemplates": "エクスポートするテンプレート",
+    "selectAll": "全選択",
+    "deselectAll": "全解除",
+    "exportBtn": "エクスポート (.ppb.json)",
+    "exporting": "エクスポート中...",
+    "exportAllHint": "未選択の場合、全テンプレートをエクスポートします",
+    "exportSuccess": "エクスポートが完了しました",
+    "dropzoneText": "ここにファイルをドロップ、またはクリックして選択",
+    "invalidBundle": "無効なバンドルファイルです",
+    "previewTemplates": "テンプレート",
+    "previewCategories": "カテゴリ",
+    "previewTags": "タグ",
+    "previewPackages": "変数パッケージ",
+    "conflictStrategy": "重複時の処理",
+    "strategy": {
+      "skip": "スキップ",
+      "overwrite": "上書き",
+      "keepBoth": "両方残す"
+    },
+    "importBtn": "インポート実行",
+    "importing": "インポート中...",
+    "importSuccess": "インポートが完了しました",
+    "resultTemplates": "テンプレート: {{count}}件",
+    "resultCategories": "カテゴリ: {{count}}件",
+    "resultTags": "タグ: {{count}}件",
+    "resultPackages": "変数パッケージ: {{count}}件",
+    "resultSkipped": "スキップ: {{count}}件",
+    "importAnother": "別のファイルをインポート"
+  },
+  "onboarding": {
+    "welcome": "テキスト挿入ランチャーへようこそ！Ctrl+Space でどこでもテンプレートを呼び出せます。",
+    "step1": "テンプレートを登録する",
+    "step2": "Ctrl+Space でランチャーを起動",
+    "step3": "検索・選択して自動ペースト",
+    "loadSamples": "サンプルテンプレートを読み込む",
+    "skip": "スキップして始める"
+  },
+  "settings": {
+    "title": "設定",
+    "appearance": "外観",
+    "theme": "テーマ",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "language": "言語",
+    "languageSelect": "表示言語",
+    "hotkey": "ショートカット",
+    "globalHotkey": "グローバルホットキー",
+    "hotkeyHint": "ランチャーを呼び出すグローバルショートカットキーです",
+    "hotkeyChange": "変更",
+    "hotkeyRecording": "設定したいキーの組み合わせを押してください...",
+    "hotkeySave": "保存",
+    "hotkeyCancel": "キャンセル",
+    "hotkeyError": "無効なショートカットです。別の組み合わせを試してください。",
+    "hotkeyRequireModifier": "修飾キー（Ctrl, Alt, Shift）が1つ以上必要です。",
+    "hotkeySaved": "ホットキーを保存しました！",
+    "about": "このアプリについて"
   }
 }

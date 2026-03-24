@@ -170,6 +170,115 @@ pub struct InterpolateRequest {
     pub values: std::collections::HashMap<String, String>,
 }
 
+// --- Export / Import Bundle ---
+
+/// .ppb.json bundle format
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Bundle {
+    pub format: String,
+    pub version: String,
+    pub exported_at: String,
+    pub pack: BundlePack,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundlePack {
+    pub name: String,
+    pub description: Option<String>,
+    pub categories: Vec<BundleCategory>,
+    pub tags: Vec<BundleTag>,
+    pub variable_packages: Vec<BundleVariablePackage>,
+    pub templates: Vec<BundleTemplate>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleCategory {
+    pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleTag {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleVariablePackage {
+    pub name: String,
+    pub description: Option<String>,
+    pub variables: Vec<BundleVariable>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleVariable {
+    pub key: String,
+    pub label: String,
+    pub default_value: Option<String>,
+    pub options: Option<Vec<String>>,
+    pub allow_free_text: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BundleTemplate {
+    pub title: String,
+    pub body: String,
+    pub category: Option<String>,
+    pub tags: Vec<String>,
+    pub variable_packages: Vec<String>,
+}
+
+/// Export request: which template IDs to export (empty = all)
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportRequest {
+    pub template_ids: Option<Vec<String>>,
+    pub pack_name: String,
+    pub pack_description: Option<String>,
+}
+
+/// Import preview: shows what will be imported and any conflicts
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportPreview {
+    pub pack_name: String,
+    pub pack_description: Option<String>,
+    pub categories: Vec<ImportPreviewItem>,
+    pub tags: Vec<ImportPreviewItem>,
+    pub variable_packages: Vec<ImportPreviewItem>,
+    pub templates: Vec<ImportPreviewItem>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportPreviewItem {
+    pub name: String,
+    pub conflict: bool,
+}
+
+/// Import request: bundle + conflict resolution strategy
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportRequest {
+    pub bundle_json: String,
+    pub conflict_strategy: ConflictStrategy,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum ConflictStrategy {
+    Skip,
+    Overwrite,
+    KeepBoth,
+}
+
 /// Schema for a variable form field sent to the frontend
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]

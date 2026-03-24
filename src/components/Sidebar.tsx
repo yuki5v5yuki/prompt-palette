@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-export type NavTab = "templates" | "categories" | "tags" | "packages";
+export type NavTab = "templates" | "categories" | "tags" | "packages" | "importExport" | "settings";
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -15,6 +15,8 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { key: "categories", label: t("nav.categories"), icon: "📁" },
     { key: "tags", label: t("nav.tags"), icon: "🏷️" },
     { key: "packages", label: t("nav.packages"), icon: "📦" },
+    { key: "importExport", label: t("nav.importExport"), icon: "📤" },
+    { key: "settings", label: t("nav.settings"), icon: "⚙️" },
   ];
 
   return (
