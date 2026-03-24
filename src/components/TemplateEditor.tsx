@@ -251,9 +251,9 @@ export default function TemplateEditor({
                 type="button"
                 className="variable-chip"
                 onClick={() => insertVariable(v.key)}
-                title={`${v.label} - ${t("variable.insertHint")}`}
+                title={t("variable.insertHint")}
               >
-                {v.key}
+                {v.label}
               </button>
             ))}
 

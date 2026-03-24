@@ -24,7 +24,6 @@ export default function VariablePackageManager() {
   const [expandedPackageId, setExpandedPackageId] = useState<string | null>(null);
   const [variables, setVariables] = useState<Variable[]>([]);
   const [editingVarId, setEditingVarId] = useState<string | null>(null);
-  const [varKey, setVarKey] = useState("");
   const [varLabel, setVarLabel] = useState("");
   const [varDefault, setVarDefault] = useState("");
   const [varOptionsList, setVarOptionsList] = useState<string[]>([]);
@@ -101,7 +100,6 @@ export default function VariablePackageManager() {
 
   // --- Variable CRUD within package ---
   const resetVarForm = () => {
-    setVarKey("");
     setVarLabel("");
     setVarDefault("");
     setVarOptionsList([]);
@@ -112,7 +110,6 @@ export default function VariablePackageManager() {
 
   const startEditVar = (v: Variable) => {
     setEditingVarId(v.id);
-    setVarKey(v.key);
     setVarLabel(v.label);
     setVarDefault(v.defaultValue ?? "");
     setVarOptionsList(v.options ?? []);
@@ -121,14 +118,15 @@ export default function VariablePackageManager() {
   };
 
   const handleSaveVar = async () => {
-    if (!varKey.trim() || !expandedPackageId) return;
+    if (!varLabel.trim() || !expandedPackageId) return;
     const filteredOptions = varOptionsList.map((s) => s.trim()).filter(Boolean);
     const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
+    const label = varLabel.trim();
 
     if (editingVarId) {
       await updateVariable(editingVarId, {
-        key: varKey.trim(),
-        label: varLabel.trim() || varKey.trim(),
+        key: label,
+        label: label,
         defaultValue: varDefault.trim() || undefined,
         options: optionsArray,
         allowFreeText: varAllowFreeText,
@@ -136,8 +134,8 @@ export default function VariablePackageManager() {
     } else {
       await createVariable({
         packageId: expandedPackageId,
-        key: varKey.trim(),
-        label: varLabel.trim() || varKey.trim(),
+        key: label,
+        label: label,
         defaultValue: varDefault.trim() || undefined,
         options: optionsArray,
         allowFreeText: varAllowFreeText,
@@ -246,18 +244,7 @@ export default function VariablePackageManager() {
                 {isCreatingVar && (
                   <div className="variable-edit-form">
                     <div className="form-row">
-                      <div className="form-group form-group-half">
-                        <label className="form-label">{t("variable.keyLabel")}</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={varKey}
-                          onChange={(e) => setVarKey(e.target.value)}
-                          placeholder={t("variable.placeholder.key")}
-                          autoFocus
-                        />
-                      </div>
-                      <div className="form-group form-group-half">
+                      <div className="form-group">
                         <label className="form-label">{t("variable.labelLabel")}</label>
                         <input
                           type="text"
@@ -265,6 +252,7 @@ export default function VariablePackageManager() {
                           value={varLabel}
                           onChange={(e) => setVarLabel(e.target.value)}
                           placeholder={t("variable.placeholder.label")}
+                          autoFocus
                         />
                       </div>
                     </div>
@@ -337,8 +325,7 @@ export default function VariablePackageManager() {
                 {variables.map((v) => (
                   <div key={v.id} className="variable-card">
                     <div className="variable-card-header" onClick={() => editingVarId === v.id ? resetVarForm() : startEditVar(v)}>
-                      <span className="variable-chip variable-chip-static">{v.key}</span>
-                      <span className="variable-card-label">{v.label}</span>
+                      <span className="variable-chip variable-chip-static">{v.label}</span>
                       {v.defaultValue && <span className="variable-card-meta">{v.defaultValue}</span>}
                       {v.options && v.options.length > 0 && <span className="variable-card-meta">{v.options.join(", ")}</span>}
                       <span className="variable-card-toggle">{editingVarId === v.id ? "▲" : "▼"}</span>

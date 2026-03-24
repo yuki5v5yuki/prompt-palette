@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import Sidebar, { type NavTab } from "./components/Sidebar";
 import TemplateList from "./components/TemplateList";
-import CategoryManager from "./components/CategoryManager";
 import TagManager from "./components/TagManager";
 import VariablePackageManager from "./components/VariablePackageManager";
 import ImportExport from "./components/ImportExport";
@@ -53,7 +52,6 @@ function App() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="main-content">
         {activeTab === "templates" && <TemplateList />}
-        {activeTab === "categories" && <CategoryManager />}
         {activeTab === "tags" && <TagManager />}
         {activeTab === "packages" && <VariablePackageManager />}
         {activeTab === "importExport" && <ImportExport />}

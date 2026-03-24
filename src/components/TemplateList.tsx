@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
 import {
@@ -29,8 +29,10 @@ import {
   updateTemplate,
   deleteTemplate,
   listCategories,
-  listTags,
+  createCategory,
   updateCategory,
+  deleteCategory,
+  listTags,
 } from "../desktop";
 import TemplateEditor from "./TemplateEditor";
 
@@ -39,6 +41,52 @@ type SortMode = "default" | "frequency" | "recent" | "name";
 interface CategoryGroup {
   category: Category | null; // null = uncategorized
   templates: TemplateWithTags[];
+}
+
+// ─── Preset Colors ───
+
+const PRESET_COLORS = [
+  "#EF4444", // red
+  "#F97316", // orange
+  "#EAB308", // yellow
+  "#22C55E", // green
+  "#06B6D4", // cyan
+  "#3B82F6", // blue
+  "#8B5CF6", // violet
+  "#EC4899", // pink
+  "#6B7280", // gray
+  "#1E293B", // dark
+];
+
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <div className="color-preset-picker">
+      {PRESET_COLORS.map((c) => (
+        <button
+          key={c}
+          className={`color-swatch ${value.toLowerCase() === c.toLowerCase() ? "active" : ""}`}
+          style={{ backgroundColor: c }}
+          onClick={() => onChange(c)}
+          type="button"
+        />
+      ))}
+      <label className="color-swatch color-swatch-custom" title="カスタムカラー">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
+        />
+        <span style={{ fontSize: "10px" }}>⋯</span>
+      </label>
+    </div>
+  );
 }
 
 // ─── Sortable Category Item ───
@@ -51,6 +99,13 @@ function SortableCategoryItem({
   onSelect,
   sortMode,
   onTemplateReorder,
+  onEditCategory,
+  onDeleteCategory,
+  editingCategoryId,
+  categoryForm,
+  onCategoryFormChange,
+  onSaveCategory,
+  onCancelCategoryEdit,
 }: {
   group: CategoryGroup;
   isExpanded: boolean;
@@ -59,6 +114,13 @@ function SortableCategoryItem({
   onSelect: (id: string) => void;
   sortMode: SortMode;
   onTemplateReorder: (categoryId: string | null, oldIndex: number, newIndex: number) => void;
+  onEditCategory: (cat: Category) => void;
+  onDeleteCategory: (id: string) => void;
+  editingCategoryId: string | null;
+  categoryForm: { name: string; icon: string; color: string };
+  onCategoryFormChange: (field: string, value: string) => void;
+  onSaveCategory: () => void;
+  onCancelCategoryEdit: () => void;
 }) {
   const categoryId = group.category?.id ?? "__uncategorized__";
   const {
@@ -94,27 +156,60 @@ function SortableCategoryItem({
     }
   }, [templateIds, onTemplateReorder, group.category?.id]);
 
+  const isEditing = editingCategoryId === group.category?.id && group.category !== null;
+
   return (
     <div ref={setNodeRef} style={style} className={isDragging ? "dragging" : ""}>
-      <div className="category-header" onClick={onToggle}>
-        {group.category !== null && (
+      <div className="category-header" onClick={isEditing ? undefined : onToggle}>
+        {group.category !== null && !isEditing && (
           <span className="drag-handle" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
             ⠿
           </span>
         )}
-        <span className={`category-chevron ${isExpanded ? "expanded" : ""}`}>▶</span>
-        {group.category ? (
-          <span
-            className="category-dot"
-            style={{ backgroundColor: group.category.color || "var(--text-secondary)" }}
-          />
+        {isEditing ? (
+          <div className="category-edit-form" onClick={(e) => e.stopPropagation()}>
+            <div className="category-edit-fields">
+              <div className="category-edit-row">
+                <input
+                  type="text"
+                  className="form-input form-input-sm"
+                  value={categoryForm.name}
+                  onChange={(e) => onCategoryFormChange("name", e.target.value)}
+                  placeholder="カテゴリ名"
+                  autoFocus
+                />
+                <button className="btn btn-primary btn-xs" onClick={onSaveCategory}>✓</button>
+                <button className="btn btn-secondary btn-xs" onClick={onCancelCategoryEdit}>✕</button>
+              </div>
+              <ColorPicker
+                value={categoryForm.color}
+                onChange={(c) => onCategoryFormChange("color", c)}
+              />
+            </div>
+          </div>
         ) : (
-          <span className="category-dot" style={{ backgroundColor: "var(--border)" }} />
+          <>
+            <span className={`category-chevron ${isExpanded ? "expanded" : ""}`}>▶</span>
+            {group.category ? (
+              <span
+                className="category-dot"
+                style={{ backgroundColor: group.category.color || "var(--text-secondary)" }}
+              />
+            ) : (
+              <span className="category-dot" style={{ backgroundColor: "var(--border)" }} />
+            )}
+            <span className="category-name">
+              {group.category?.name ?? "未分類"}
+            </span>
+            <span className="category-badge">{group.templates.length}</span>
+            {group.category !== null && (
+              <span className="category-actions" onClick={(e) => e.stopPropagation()}>
+                <button className="btn btn-ghost btn-xs" onClick={() => onEditCategory(group.category!)}>✏️</button>
+                <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => onDeleteCategory(group.category!.id)}>🗑️</button>
+              </span>
+            )}
+          </>
         )}
-        <span className="category-name">
-          {group.category?.name ?? "未分類"}
-        </span>
-        <span className="category-badge">{group.templates.length}</span>
       </div>
 
       {isExpanded && (
@@ -224,10 +319,104 @@ export default function TemplateList() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Resizable pane
+  const [listWidth, setListWidth] = useState(() => {
+    const saved = localStorage.getItem("templateListWidth");
+    return saved ? parseInt(saved, 10) : 320;
+  });
+  const isResizing = useRef(false);
+
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return;
+      const sidebar = document.querySelector(".sidebar");
+      const sidebarWidth = sidebar ? sidebar.getBoundingClientRect().width : 0;
+      const newWidth = Math.max(200, Math.min(ev.clientX - sidebarWidth, 600));
+      setListWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      setListWidth((w) => {
+        localStorage.setItem("templateListWidth", String(w));
+        return w;
+      });
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, []);
+
   // New state
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("default");
+
+  // Category CRUD state
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryFormName, setCategoryFormName] = useState("");
+  const [categoryFormIcon, setCategoryFormIcon] = useState("");
+  const [categoryFormColor, setCategoryFormColor] = useState("#534AB7");
+
+  const resetCategoryForm = () => {
+    setCategoryFormName("");
+    setCategoryFormIcon("");
+    setCategoryFormColor("#534AB7");
+    setEditingCategoryId(null);
+    setIsCreatingCategory(false);
+  };
+
+  const startEditCategory = (cat: Category) => {
+    setEditingCategoryId(cat.id);
+    setCategoryFormName(cat.name);
+    setCategoryFormIcon(cat.icon ?? "");
+    setCategoryFormColor(cat.color ?? "#534AB7");
+    setIsCreatingCategory(false);
+  };
+
+  const handleSaveCategory = async () => {
+    if (!categoryFormName.trim()) return;
+    if (editingCategoryId) {
+      await updateCategory(editingCategoryId, {
+        name: categoryFormName.trim(),
+        icon: categoryFormIcon || undefined,
+        color: categoryFormColor || undefined,
+      });
+    } else {
+      await createCategory({
+        name: categoryFormName.trim(),
+        icon: categoryFormIcon || undefined,
+        color: categoryFormColor || undefined,
+      });
+    }
+    resetCategoryForm();
+    await reload();
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm(t("common.confirmDelete"))) return;
+    await deleteCategory(id);
+    if (editingCategoryId === id) resetCategoryForm();
+    await reload();
+  };
+
+  const handleCategoryFormChange = (field: string, value: string) => {
+    switch (field) {
+      case "name": setCategoryFormName(value); break;
+      case "icon": setCategoryFormIcon(value); break;
+      case "color": setCategoryFormColor(value); break;
+    }
+  };
 
   const reload = useCallback(async () => {
     const [tpls, cats, tgs] = await Promise.all([
@@ -426,7 +615,7 @@ export default function TemplateList() {
   return (
     <div className="template-page">
       {/* Left: Template list */}
-      <div className="template-list-panel">
+      <div className="template-list-panel" style={{ width: listWidth, minWidth: 200 }}>
         <div className="panel-header">
           <h2 className="panel-title">{t("template.title")}</h2>
           <button
@@ -454,7 +643,7 @@ export default function TemplateList() {
           </div>
         </div>
 
-        {/* Sort buttons */}
+        {/* Sort buttons + Add category */}
         <div className="sort-buttons">
           {(
             [
@@ -472,10 +661,45 @@ export default function TemplateList() {
               {label}
             </button>
           ))}
+          <button
+            className="btn btn-ghost btn-xs"
+            style={{ marginLeft: "auto", fontSize: "0.75rem" }}
+            onClick={() => {
+              resetCategoryForm();
+              setIsCreatingCategory(true);
+            }}
+          >
+            + {t("category.newCategory", "カテゴリ追加")}
+          </button>
         </div>
 
         {/* Category accordion tree */}
         <div className="template-items">
+          {isCreatingCategory && (
+            <div className="category-create-form">
+              <div className="category-edit-form">
+                <div className="category-edit-fields">
+                  <div className="category-edit-row">
+                    <input
+                      type="text"
+                      className="form-input form-input-sm"
+                      value={categoryFormName}
+                      onChange={(e) => setCategoryFormName(e.target.value)}
+                      placeholder={t("category.placeholder.name", "カテゴリ名")}
+                      autoFocus
+                    />
+                    <button className="btn btn-primary btn-xs" onClick={handleSaveCategory}>✓</button>
+                    <button className="btn btn-secondary btn-xs" onClick={resetCategoryForm}>✕</button>
+                  </div>
+                  <ColorPicker
+                    value={categoryFormColor}
+                    onChange={(c) => setCategoryFormColor(c)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {groups.length === 0 && !isCreating && (
             <p className="empty-message">{t("template.empty")}</p>
           )}
@@ -506,6 +730,13 @@ export default function TemplateList() {
                       }}
                       sortMode={sortMode}
                       onTemplateReorder={handleTemplateReorder}
+                      onEditCategory={startEditCategory}
+                      onDeleteCategory={handleDeleteCategory}
+                      editingCategoryId={editingCategoryId}
+                      categoryForm={{ name: categoryFormName, icon: categoryFormIcon, color: categoryFormColor }}
+                      onCategoryFormChange={handleCategoryFormChange}
+                      onSaveCategory={handleSaveCategory}
+                      onCancelCategoryEdit={resetCategoryForm}
                     />
                   </div>
                 );
@@ -514,6 +745,9 @@ export default function TemplateList() {
           </DndContext>
         </div>
       </div>
+
+      {/* Resizer */}
+      <div className="pane-resizer" onMouseDown={handleResizeStart} />
 
       {/* Right: Editor */}
       <div className="template-editor-panel">

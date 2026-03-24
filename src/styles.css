@@ -257,17 +257,30 @@ body {
 }
 
 .template-list-panel {
-  width: 320px;
-  min-width: 320px;
-  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  border-right: none;
   display: flex;
   flex-direction: column;
   height: 100vh;
 }
 
+.pane-resizer {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.pane-resizer:hover,
+.pane-resizer:active {
+  background: var(--accent);
+}
+
 .template-editor-panel {
   flex: 1;
   overflow-y: auto;
+  min-width: 0;
 }
 
 /* ─── Filter bar ─── */
@@ -1161,6 +1174,99 @@ body {
   height: 1px;
   background: var(--border);
   margin: 4px 12px;
+}
+
+/* ─── Category Actions ─── */
+
+.category-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.category-header:hover .category-actions {
+  opacity: 0.6;
+}
+
+.category-actions:hover {
+  opacity: 1 !important;
+}
+
+.category-edit-form {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.category-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.category-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-edit-row .form-input {
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.category-create-form {
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* ─── Color Preset Picker ─── */
+
+.color-preset-picker {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, border-color 0.1s;
+  flex-shrink: 0;
+}
+
+.color-swatch:hover {
+  transform: scale(1.2);
+}
+
+.color-swatch.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 1px var(--bg-primary);
+}
+
+.color-swatch-custom {
+  background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ─── Drag & Drop ─── */
