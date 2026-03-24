@@ -19,7 +19,11 @@ fn db_path(app: &AppHandle) -> Result<PathBuf, String> {
 /// Open a connection to the database.
 pub fn open(app: &AppHandle) -> Result<Connection, String> {
     let path = db_path(app)?;
-    Connection::open(&path).map_err(|e| format!("Failed to open database: {}", e))
+    let conn =
+        Connection::open(&path).map_err(|e| format!("Failed to open database: {}", e))?;
+    conn.execute_batch("PRAGMA foreign_keys = ON;")
+        .map_err(|e| format!("Failed to enable foreign keys: {}", e))?;
+    Ok(conn)
 }
 
 /// Initialize the database: enable foreign keys and run pending migrations.
