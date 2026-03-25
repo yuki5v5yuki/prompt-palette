@@ -67,6 +67,12 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
+## コード署名
+
+Windows向けビルドのコード署名は [SignPath.io](https://signpath.io/) により無料提供されています。証明書は [SignPath Foundation](https://signpath.org/) が発行しています。
+
+Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
 ## ライセンス
 
-Private
+MIT License — 詳細は [LICENSE](LICENSE) を参照
