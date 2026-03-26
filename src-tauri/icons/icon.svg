@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6C5CE7"/>
+      <stop offset="100%" style="stop-color:#4A90D9"/>
+    </linearGradient>
+    <!-- Palette body gradient -->
+    <linearGradient id="palette" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF"/>
+      <stop offset="100%" style="stop-color:#F0EDF6"/>
+    </linearGradient>
+    <!-- Cursor glow -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Shadow for palette -->
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="4" stdDeviation="8" flood-color="#00000040"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96" fill="url(#bg)"/>
+
+  <!-- Paint palette shape -->
+  <g transform="translate(256, 270)" filter="url(#shadow)">
+    <!-- Main palette body - bean/kidney shape -->
+    <path d="M-140,-100
+             C-140,-160 -80,-190 -10,-190
+             C60,-190 130,-160 160,-100
+             C190,-40 180,40 140,90
+             C100,140 40,160 -10,150
+             C-60,140 -90,110 -100,70
+             C-105,50 -85,30 -65,35
+             C-45,40 -35,60 -40,80
+             C-45,95 -30,110 -10,110
+             C30,110 80,80 100,40
+             C120,0 110,-50 80,-80
+             C50,-110 -20,-120 -70,-100
+             C-120,-80 -140,-40 -140,-100Z"
+          fill="url(#palette)" opacity="0.95"/>
+
+    <!-- Color dots on palette -->
+    <circle cx="-60" cy="-120" r="24" fill="#FF6B6B"/>
+    <circle cx="30" cy="-140" r="22" fill="#FECA57"/>
+    <circle cx="105" cy="-100" r="20" fill="#48DBFB"/>
+    <circle cx="130" cy="-20" r="22" fill="#FF9FF3"/>
+    <circle cx="100" cy="60" r="20" fill="#54E89D"/>
+
+    <!-- Thumb hole -->
+    <ellipse cx="-55" cy="60" rx="28" ry="30" fill="url(#bg)" opacity="0.7"/>
+  </g>
+
+  <!-- Text cursor (blinking line) -->
+  <g filter="url(#glow)">
+    <rect x="240" y="100" width="8" height="100" rx="4" fill="#FFFFFF" opacity="0.95"/>
+    <!-- Small horizontal lines suggesting text -->
+    <rect x="260" y="110" width="60" height="5" rx="2.5" fill="#FFFFFF" opacity="0.5"/>
+    <rect x="260" y="130" width="45" height="5" rx="2.5" fill="#FFFFFF" opacity="0.4"/>
+    <rect x="260" y="150" width="55" height="5" rx="2.5" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+</svg>
