@@ -519,7 +519,11 @@ pub fn update_template(app: AppHandle, id: String, input: UpdateTemplateInput) -
 
     let title = input.title.unwrap_or(current.title);
     let body = input.body.unwrap_or(current.body);
-    let category_id = input.category_id.or(current.category_id);
+    let category_id = match &input.category_id {
+        Some(id) if id.is_empty() => None,
+        Some(id) => Some(id.clone()),
+        None => current.category_id,
+    };
     let hotkey = input.hotkey.or(current.hotkey);
     let sort_order = input.sort_order.unwrap_or(current.sort_order);
     let now = chrono::Utc::now().to_rfc3339();

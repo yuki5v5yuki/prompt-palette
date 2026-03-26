@@ -4,10 +4,15 @@ import Fuse from "fuse.js";
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
+  type DragOverEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -98,7 +103,7 @@ function SortableCategoryItem({
   selectedId,
   onSelect,
   sortMode,
-  onTemplateReorder,
+  isDropTarget,
   onEditCategory,
   onDeleteCategory,
   editingCategoryId,
@@ -113,7 +118,7 @@ function SortableCategoryItem({
   selectedId: string | null;
   onSelect: (id: string) => void;
   sortMode: SortMode;
-  onTemplateReorder: (categoryId: string | null, oldIndex: number, newIndex: number) => void;
+  isDropTarget: boolean;
   onEditCategory: (cat: Category) => void;
   onDeleteCategory: (id: string) => void;
   editingCategoryId: string | null;
@@ -135,10 +140,6 @@ function SortableCategoryItem({
     disabled: group.category === null, // uncategorized is not draggable
   });
 
-  const templateSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -146,21 +147,11 @@ function SortableCategoryItem({
 
   const templateIds = group.templates.map((t) => `tpl-${t.id}`);
 
-  const handleTemplateDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = templateIds.indexOf(active.id as string);
-    const newIndex = templateIds.indexOf(over.id as string);
-    if (oldIndex !== -1 && newIndex !== -1) {
-      onTemplateReorder(group.category?.id ?? null, oldIndex, newIndex);
-    }
-  }, [templateIds, onTemplateReorder, group.category?.id]);
-
   const isEditing = editingCategoryId === group.category?.id && group.category !== null;
 
   return (
     <div ref={setNodeRef} style={style} className={isDragging ? "dragging" : ""}>
-      <div className="category-header" onClick={isEditing ? undefined : onToggle}>
+      <div className={`category-header ${isDropTarget ? "category-drop-target" : ""}`} onClick={isEditing ? undefined : onToggle}>
         {group.category !== null && !isEditing && (
           <span className="drag-handle" {...attributes} {...listeners} onClick={(e) => e.stopPropagation()}>
             ⠿
@@ -214,23 +205,17 @@ function SortableCategoryItem({
 
       {isExpanded && (
         <div className="category-templates">
-          <DndContext
-            sensors={templateSensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleTemplateDragEnd}
-          >
-            <SortableContext items={templateIds} strategy={verticalListSortingStrategy}>
-              {group.templates.map((tpl) => (
-                <SortableTemplateItem
-                  key={tpl.id}
-                  template={tpl}
-                  isSelected={selectedId === tpl.id}
-                  onSelect={() => onSelect(tpl.id)}
-                  isDndDisabled={sortMode !== "default"}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+          <SortableContext items={templateIds} strategy={verticalListSortingStrategy}>
+            {group.templates.map((tpl) => (
+              <SortableTemplateItem
+                key={tpl.id}
+                template={tpl}
+                isSelected={selectedId === tpl.id}
+                onSelect={() => onSelect(tpl.id)}
+                isDndDisabled={sortMode !== "default"}
+              />
+            ))}
+          </SortableContext>
         </div>
       )}
     </div>
@@ -553,64 +538,211 @@ export default function TemplateList() {
     .filter((g) => g.category !== null)
     .map((g) => `cat-${g.category!.id}`);
 
-  const handleCategoryDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+  // ─── D&D: Unified template drag state ───
 
-    const oldIndex = categoryIds.indexOf(active.id as string);
-    const newIndex = categoryIds.indexOf(over.id as string);
-    if (oldIndex === -1 || newIndex === -1) return;
+  const [activeType, setActiveType] = useState<"template" | "category" | null>(null);
+  const [activeTplData, setActiveTplData] = useState<TemplateWithTags | null>(null);
+  const [overCategoryId, setOverCategoryId] = useState<string | null>(null);
 
-    // Optimistic update
-    const reorderedCats = arrayMove(
-      categories.filter((c) => categoryIds.includes(`cat-${c.id}`)),
-      oldIndex,
-      newIndex
+  const allTemplateIds = useMemo(() => {
+    return groups.flatMap((g) =>
+      effectiveExpanded.has(g.category?.id ?? "__uncategorized__")
+        ? g.templates.map((t) => `tpl-${t.id}`)
+        : []
     );
-    setCategories((prev) => {
-      const otherCats = prev.filter((c) => !categoryIds.includes(`cat-${c.id}`));
-      return [...reorderedCats, ...otherCats];
-    });
+  }, [groups, effectiveExpanded]);
 
-    // Persist
-    for (let i = 0; i < reorderedCats.length; i++) {
-      updateCategory(reorderedCats[i].id, { sortOrder: i });
+  const customCollisionDetection: CollisionDetection = useCallback((args) => {
+    const activeId = String(args.active.id);
+    if (activeId.startsWith("cat-")) {
+      return closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          (c) => String(c.id).startsWith("cat-")
+        ),
+      });
     }
-  };
-
-  // ─── D&D: Template reorder ───
-
-  const handleTemplateReorder = async (
-    categoryId: string | null,
-    oldIndex: number,
-    newIndex: number
-  ) => {
-    if (sortMode !== "default") return; // D&D only in default sort
-
-    const group = groups.find(
-      (g) => (g.category?.id ?? null) === categoryId
+    // Template drag: prefer template targets, fall back to category targets
+    const tplContainers = args.droppableContainers.filter(
+      (c) => String(c.id).startsWith("tpl-")
     );
-    if (!group) return;
+    const tplCollisions = pointerWithin({ ...args, droppableContainers: tplContainers });
+    if (tplCollisions.length > 0) return tplCollisions;
 
-    const reordered = arrayMove(group.templates, oldIndex, newIndex);
+    return closestCenter({
+      ...args,
+      droppableContainers: args.droppableContainers.filter(
+        (c) => String(c.id).startsWith("cat-")
+      ),
+    });
+  }, []);
 
-    // Optimistic update
-    setTemplates((prev) => {
-      const updated = [...prev];
-      for (let i = 0; i < reordered.length; i++) {
-        const idx = updated.findIndex((t) => t.id === reordered[i].id);
-        if (idx !== -1) {
-          updated[idx] = { ...updated[idx], sortOrder: i };
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const id = String(event.active.id);
+    if (id.startsWith("tpl-")) {
+      setActiveType("template");
+      const tplId = id.replace("tpl-", "");
+      setActiveTplData(templates.find((t) => t.id === tplId) ?? null);
+    } else if (id.startsWith("cat-")) {
+      setActiveType("category");
+      setActiveTplData(null);
+    }
+  }, [templates]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    if (activeType !== "template") return;
+    if (!event.over) { setOverCategoryId(null); return; }
+    const overId = String(event.over.id);
+    if (overId.startsWith("cat-")) {
+      setOverCategoryId(overId.replace("cat-", ""));
+    } else if (overId.startsWith("tpl-")) {
+      const tplId = overId.replace("tpl-", "");
+      const tpl = templates.find((t) => t.id === tplId);
+      setOverCategoryId(tpl?.categoryId ?? "__uncategorized__");
+    } else {
+      setOverCategoryId(null);
+    }
+  }, [templates, activeType]);
+
+  const handleUnifiedDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveType(null);
+    setActiveTplData(null);
+    setOverCategoryId(null);
+
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Category reorder
+    if (activeId.startsWith("cat-") && overId.startsWith("cat-")) {
+      const oldIndex = categoryIds.indexOf(activeId);
+      const newIndex = categoryIds.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const reorderedCats = arrayMove(
+        categories.filter((c) => categoryIds.includes(`cat-${c.id}`)),
+        oldIndex,
+        newIndex
+      );
+      setCategories((prev) => {
+        const otherCats = prev.filter((c) => !categoryIds.includes(`cat-${c.id}`));
+        return [...reorderedCats, ...otherCats];
+      });
+      for (let i = 0; i < reorderedCats.length; i++) {
+        updateCategory(reorderedCats[i].id, { sortOrder: i });
+      }
+      return;
+    }
+
+    // Template drag
+    if (activeId.startsWith("tpl-")) {
+      if (sortMode !== "default") return;
+
+      const activeTplId = activeId.replace("tpl-", "");
+      const activeTpl = templates.find((t) => t.id === activeTplId);
+      if (!activeTpl) return;
+
+      const sourceCatId = activeTpl.categoryId ?? null;
+
+      let targetCatId: string | null;
+      let targetInsertIndex = 0;
+
+      if (overId.startsWith("tpl-")) {
+        const overTplId = overId.replace("tpl-", "");
+        const overTpl = templates.find((t) => t.id === overTplId);
+        if (!overTpl) return;
+        targetCatId = overTpl.categoryId ?? null;
+        const targetGroup = groups.find((g) => (g.category?.id ?? null) === targetCatId);
+        if (targetGroup) {
+          targetInsertIndex = targetGroup.templates.findIndex((t) => t.id === overTplId);
+        }
+      } else if (overId.startsWith("cat-")) {
+        const catKey = overId.replace("cat-", "");
+        targetCatId = catKey === "__uncategorized__" ? null : catKey;
+        targetInsertIndex = 0;
+      } else {
+        return;
+      }
+
+      // Same category: reorder
+      if (sourceCatId === targetCatId) {
+        const group = groups.find((g) => (g.category?.id ?? null) === sourceCatId);
+        if (!group) return;
+        const oldIndex = group.templates.findIndex((t) => t.id === activeTplId);
+        if (oldIndex === -1 || targetInsertIndex === -1) return;
+        const reordered = arrayMove(group.templates, oldIndex, targetInsertIndex);
+        setTemplates((prev) => {
+          const updated = [...prev];
+          for (let i = 0; i < reordered.length; i++) {
+            const idx = updated.findIndex((t) => t.id === reordered[i].id);
+            if (idx !== -1) updated[idx] = { ...updated[idx], sortOrder: i };
+          }
+          return updated.sort((a, b) => a.sortOrder - b.sortOrder);
+        });
+        for (let i = 0; i < reordered.length; i++) {
+          updateTemplate(reordered[i].id, { sortOrder: i });
+        }
+        return;
+      }
+
+      // Cross-category move
+      const newCategoryId = targetCatId === null ? "" : targetCatId;
+
+      // Optimistic update
+      setTemplates((prev) => {
+        const updated = prev.map((t) =>
+          t.id === activeTplId
+            ? { ...t, categoryId: targetCatId, sortOrder: targetInsertIndex }
+            : t
+        );
+        // Renumber target category
+        const targetTpls = updated
+          .filter((t) => (t.categoryId ?? null) === targetCatId && t.id !== activeTplId)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        targetTpls.splice(targetInsertIndex, 0, updated.find((t) => t.id === activeTplId)!);
+        for (let i = 0; i < targetTpls.length; i++) {
+          const idx = updated.findIndex((t) => t.id === targetTpls[i].id);
+          if (idx !== -1) updated[idx] = { ...updated[idx], sortOrder: i };
+        }
+        // Renumber source category
+        const sourceTpls = updated
+          .filter((t) => (t.categoryId ?? null) === sourceCatId && t.id !== activeTplId)
+          .sort((a, b) => a.sortOrder - b.sortOrder);
+        for (let i = 0; i < sourceTpls.length; i++) {
+          const idx = updated.findIndex((t) => t.id === sourceTpls[i].id);
+          if (idx !== -1) updated[idx] = { ...updated[idx], sortOrder: i };
+        }
+        return updated.sort((a, b) => a.sortOrder - b.sortOrder);
+      });
+
+      // Persist: move template to new category
+      await updateTemplate(activeTplId, {
+        categoryId: newCategoryId,
+        sortOrder: targetInsertIndex,
+      });
+
+      // Persist: renumber target category
+      const targetGroup = groups.find((g) => (g.category?.id ?? null) === targetCatId);
+      if (targetGroup) {
+        const targetTpls = [...targetGroup.templates.filter((t) => t.id !== activeTplId)];
+        targetTpls.splice(targetInsertIndex, 0, activeTpl);
+        for (let i = 0; i < targetTpls.length; i++) {
+          if (targetTpls[i].id !== activeTplId) {
+            updateTemplate(targetTpls[i].id, { sortOrder: i });
+          }
         }
       }
-      return updated.sort((a, b) => a.sortOrder - b.sortOrder);
-    });
 
-    // Persist
-    for (let i = 0; i < reordered.length; i++) {
-      updateTemplate(reordered[i].id, { sortOrder: i });
+      // Persist: renumber source category
+      const sourceGroup = groups.find((g) => (g.category?.id ?? null) === sourceCatId);
+      if (sourceGroup) {
+        const sourceTpls = sourceGroup.templates.filter((t) => t.id !== activeTplId);
+        for (let i = 0; i < sourceTpls.length; i++) {
+          updateTemplate(sourceTpls[i].id, { sortOrder: i });
+        }
+      }
     }
-  };
+  }, [categoryIds, categories, templates, groups, sortMode]);
 
   return (
     <div className="template-page">
@@ -706,10 +838,12 @@ export default function TemplateList() {
 
           <DndContext
             sensors={categoryDndSensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleCategoryDragEnd}
+            collisionDetection={customCollisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleUnifiedDragEnd}
           >
-            <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
+            <SortableContext items={[...categoryIds, ...allTemplateIds]} strategy={verticalListSortingStrategy}>
               {groups.map((group) => {
                 const catId = group.category?.id ?? "__uncategorized__";
                 const isExpanded = effectiveExpanded.has(catId);
@@ -729,7 +863,7 @@ export default function TemplateList() {
                         setIsCreating(false);
                       }}
                       sortMode={sortMode}
-                      onTemplateReorder={handleTemplateReorder}
+                      isDropTarget={activeType === "template" && overCategoryId === catId}
                       onEditCategory={startEditCategory}
                       onDeleteCategory={handleDeleteCategory}
                       editingCategoryId={editingCategoryId}
@@ -742,6 +876,17 @@ export default function TemplateList() {
                 );
               })}
             </SortableContext>
+            <DragOverlay>
+              {activeTplData ? (
+                <div className="template-item drag-overlay">
+                  <div className="template-item-title">{activeTplData.title}</div>
+                  <div className="template-item-body">
+                    {activeTplData.body.slice(0, 60)}
+                    {activeTplData.body.length > 60 ? "..." : ""}
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         </div>
       </div>

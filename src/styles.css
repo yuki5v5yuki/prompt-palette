@@ -1306,6 +1306,15 @@ body {
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  opacity: 0.9;
+}
+
+.category-drop-target {
+  background: rgba(234, 179, 8, 0.08);
+  border: 2px dashed var(--accent);
+  border-radius: 6px;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 /* ─── Import / Export ─── */
