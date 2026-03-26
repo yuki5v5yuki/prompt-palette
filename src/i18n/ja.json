@@ -66,6 +66,11 @@
     "detectedVars": "検出された変数",
     "empty": "変数が定義されていません。本文に {{変数名}} を入れて変数を追加できます。",
     "insertHint": "クリックで本文に挿入",
+    "paletteHint": "クリックすると本文のカーソル位置に挿入されます",
+    "selectPackageFirst": "上の変数パッケージを選択すると、ここに変数ボタンが表示されます",
+    "builtinClipboard": "貼り付け時のクリップボード内容に置き換わります",
+    "builtinToday": "今日の日付に置き換わります（例: 2026/03/26）",
+    "builtinNow": "現在の日時に置き換わります",
     "quickAdd": "変数をすばやく追加",
     "preview": "プレビュー",
     "builtinVars": "組み込み変数",
@@ -73,7 +78,10 @@
     "detailSettings": "変数の詳細設定",
     "detailSettingsHint": "デフォルト値や選択肢を設定できます",
     "addOption": "選択肢を追加",
-    "allowFreeText": "フリーテキストの入力も許可する",
+    "allowFreeText": "選択肢以外の値も入力できるようにする",
+    "labelHint": "テンプレート使用時に表示される名前です",
+    "defaultHint": "未入力時に使われる値です",
+    "optionsHint": "テンプレート使用時にドロップダウンで選べる候補です",
     "placeholder": {
       "key": "例: customer_name",
       "label": "例: お客様名",
@@ -84,7 +92,9 @@
   "variablePackage": {
     "title": "変数パッケージ管理",
     "packagesLabel": "変数パッケージ",
+    "selectHint": "選択すると、本文エリアに変数ボタンが表示されます",
     "noPackagesHint": "変数パッケージがありません",
+    "noVariablesInPackage": "選択中のパッケージに変数がありません",
     "newPackage": "新規パッケージ",
     "nameLabel": "パッケージ名",
     "descriptionLabel": "説明",
@@ -93,7 +103,16 @@
       "description": "パッケージの説明（省略可）"
     },
     "variableCount": "{{count}}個の変数",
-    "empty": "変数パッケージがありません。"
+    "empty": "変数パッケージがありません。",
+    "emptyGuide": "＋ボタンで変数を追加してください。変数はテンプレート使用時に入力フォームになります。"
+  },
+  "launcher": {
+    "searchPlaceholder": "テンプレートを検索...",
+    "noResults": "一致するテンプレートがありません",
+    "submit": "確定 (Enter)",
+    "inputPlaceholder": "入力してください",
+    "comboHint": "候補から選択、または自由に入力",
+    "templatePreviewLabel": "挿入される位置："
   },
   "tag": {
     "title": "タグ管理",

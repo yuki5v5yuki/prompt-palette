@@ -12,7 +12,11 @@ interface TemplateEditorProps {
   onCancel: () => void;
 }
 
-const BUILTIN_VARS = ["@clipboard", "@today", "@now"];
+const BUILTIN_VARS = [
+  { key: "@clipboard", tooltipKey: "variable.builtinClipboard" },
+  { key: "@today", tooltipKey: "variable.builtinToday" },
+  { key: "@now", tooltipKey: "variable.builtinNow" },
+];
 
 export default function TemplateEditor({
   template,
@@ -223,6 +227,7 @@ export default function TemplateEditor({
       {allPackages.length > 0 && (
         <div className="form-group">
           <label className="form-label">{t("variablePackage.packagesLabel")}</label>
+          <p className="form-hint">{t("variablePackage.selectHint")}</p>
           <div className="tag-selector">
             {allPackages.map((pkg) => (
               <button
@@ -245,34 +250,59 @@ export default function TemplateEditor({
         <div className="body-editing-area">
           {/* Variable Palette */}
           <div className="variable-palette">
-            {packageVariables.length > 0 && packageVariables.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className="variable-chip"
-                onClick={() => insertVariable(v.key)}
-                title={t("variable.insertHint")}
-              >
-                {v.label}
-              </button>
-            ))}
+            {/* Variables grouped by package */}
+            {allPackages
+              .filter((pkg) => selectedPackageIds.has(pkg.id))
+              .map((pkg) => {
+                const pkgVars = packageVariables.filter((v) => v.packageId === pkg.id);
+                if (pkgVars.length === 0) return null;
+                return (
+                  <div key={pkg.id} className="variable-palette-group">
+                    <span className="variable-palette-group-label">{pkg.name}</span>
+                    {pkgVars.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        className="variable-chip"
+                        onClick={() => insertVariable(v.key)}
+                        title={t("variable.insertHint")}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
 
             {/* Built-in variables */}
             {BUILTIN_VARS.map((bv) => (
               <button
-                key={bv}
+                key={bv.key}
                 type="button"
                 className="variable-chip variable-chip-builtin"
-                onClick={() => insertVariable(bv)}
-                title={`${bv} - ${t("variable.insertHint")}`}
+                onClick={() => insertVariable(bv.key)}
+                title={t(bv.tooltipKey)}
               >
-                {bv}
+                {bv.key}
               </button>
             ))}
 
-            {allPackages.length === 0 && selectedPackageIds.size === 0 && (
+            {/* Guide messages */}
+            {allPackages.length > 0 && selectedPackageIds.size === 0 && (
               <span className="variable-palette-hint">
-                {t("variablePackage.noPackagesHint")}
+                {t("variable.selectPackageFirst")}
+              </span>
+            )}
+
+            {selectedPackageIds.size > 0 && packageVariables.length === 0 && (
+              <span className="variable-palette-hint">
+                {t("variablePackage.noVariablesInPackage")}
+              </span>
+            )}
+
+            {packageVariables.length > 0 && (
+              <span className="variable-palette-hint">
+                {t("variable.paletteHint")}
               </span>
             )}
           </div>

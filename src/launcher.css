@@ -154,6 +154,39 @@ body {
   white-space: nowrap;
 }
 
+.launcher-body-preview {
+  padding: 6px 16px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.launcher-body-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.launcher-body-preview-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.launcher-preview-var {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 0 3px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
 .launcher-var-form {
   padding: 12px 16px;
   overflow-y: auto;
@@ -170,9 +203,9 @@ body {
 }
 
 .launcher-var-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .launcher-var-input {
@@ -194,7 +227,7 @@ body {
 
 .launcher-var-input::placeholder {
   color: var(--text-secondary);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .combobox-wrapper {

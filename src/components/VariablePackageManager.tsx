@@ -246,6 +246,7 @@ export default function VariablePackageManager() {
                     <div className="form-row">
                       <div className="form-group">
                         <label className="form-label">{t("variable.labelLabel")}</label>
+                        <p className="form-hint">{t("variable.labelHint")}</p>
                         <input
                           type="text"
                           className="form-input"
@@ -259,6 +260,7 @@ export default function VariablePackageManager() {
                     <div className="form-row">
                       <div className="form-group form-group-half">
                         <label className="form-label">{t("variable.defaultLabel")}</label>
+                        <p className="form-hint">{t("variable.defaultHint")}</p>
                         <input
                           type="text"
                           className="form-input"
@@ -270,6 +272,7 @@ export default function VariablePackageManager() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">{t("variable.optionsLabel")}</label>
+                      <p className="form-hint">{t("variable.optionsHint")}</p>
                       <div className="option-list">
                         {varOptionsList.map((opt, idx) => (
                           <div key={idx} className="option-item">
@@ -405,7 +408,7 @@ export default function VariablePackageManager() {
 
                 {variables.length === 0 && !isCreatingVar && (
                   <p className="empty-message" style={{ fontSize: "0.85rem", padding: "8px 12px" }}>
-                    {t("variable.empty")}
+                    {t("variablePackage.emptyGuide")}
                   </p>
                 )}
               </div>
