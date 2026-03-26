@@ -250,29 +250,18 @@ export default function TemplateEditor({
         <div className="body-editing-area">
           {/* Variable Palette */}
           <div className="variable-palette">
-            {/* Variables grouped by package */}
-            {allPackages
-              .filter((pkg) => selectedPackageIds.has(pkg.id))
-              .map((pkg) => {
-                const pkgVars = packageVariables.filter((v) => v.packageId === pkg.id);
-                if (pkgVars.length === 0) return null;
-                return (
-                  <div key={pkg.id} className="variable-palette-group">
-                    <span className="variable-palette-group-label">{pkg.name}</span>
-                    {pkgVars.map((v) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        className="variable-chip"
-                        onClick={() => insertVariable(v.key)}
-                        title={t("variable.insertHint")}
-                      >
-                        {v.label}
-                      </button>
-                    ))}
-                  </div>
-                );
-              })}
+            {/* Selected variables (flat — 1 package = 1 variable) */}
+            {packageVariables.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                className="variable-chip"
+                onClick={() => insertVariable(v.key)}
+                title={t("variable.insertHint")}
+              >
+                {v.label}
+              </button>
+            ))}
 
             {/* Built-in variables */}
             {BUILTIN_VARS.map((bv) => (

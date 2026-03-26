@@ -800,25 +800,6 @@ body {
   border-style: solid;
 }
 
-.variable-palette-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  width: 100%;
-}
-
-.variable-palette-group-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-right: 4px;
-  white-space: nowrap;
-}
-
 .variable-palette-hint {
   font-size: 11px;
   color: var(--text-secondary);

@@ -23,7 +23,7 @@
     "templates": "Templates",
     "categories": "Categories",
     "tags": "Tags",
-    "packages": "Variable Packages",
+    "packages": "Variables",
     "importExport": "Import / Export",
     "settings": "Settings"
   },
@@ -67,7 +67,7 @@
     "empty": "No variables defined. Add {{variable_name}} in the body to use variables.",
     "insertHint": "Click to insert into body",
     "paletteHint": "Click to insert at cursor position in the body",
-    "selectPackageFirst": "Select a variable package above to show variable buttons here",
+    "selectPackageFirst": "Select variables above to show variable buttons here",
     "builtinClipboard": "Replaced with clipboard content when pasting",
     "builtinToday": "Replaced with today's date (e.g. 2026/03/26)",
     "builtinNow": "Replaced with current date and time",
@@ -90,20 +90,20 @@
     }
   },
   "variablePackage": {
-    "title": "Variable Package Management",
-    "packagesLabel": "Variable Packages",
-    "selectHint": "Select a package to show variable buttons in the body area",
-    "noPackagesHint": "No variable packages available",
-    "noVariablesInPackage": "No variables in selected packages",
-    "newPackage": "New Package",
-    "nameLabel": "Package Name",
+    "title": "Variable Management",
+    "packagesLabel": "Variables",
+    "selectHint": "Select variables to show variable buttons in the body area",
+    "noPackagesHint": "No variables available",
+    "noVariablesInPackage": "No settings for selected variable",
+    "newPackage": "New Variable",
+    "nameLabel": "Variable Name",
     "descriptionLabel": "Description",
     "placeholder": {
-      "name": "Enter package name",
-      "description": "Package description (optional)"
+      "name": "Enter variable name (e.g. Customer Name)",
+      "description": "Variable description (optional)"
     },
     "variableCount": "{{count}} variables",
-    "empty": "No variable packages yet.",
+    "empty": "No variables yet.",
     "emptyGuide": "Click + to add variables. Variables become input fields when using the template."
   },
   "launcher": {
@@ -143,7 +143,7 @@
     "previewTemplates": "Templates",
     "previewCategories": "Categories",
     "previewTags": "Tags",
-    "previewPackages": "Variable Packages",
+    "previewPackages": "Variables",
     "conflictStrategy": "Conflict resolution",
     "strategy": {
       "skip": "Skip",
@@ -156,7 +156,7 @@
     "resultTemplates": "Templates: {{count}}",
     "resultCategories": "Categories: {{count}}",
     "resultTags": "Tags: {{count}}",
-    "resultPackages": "Variable Packages: {{count}}",
+    "resultPackages": "Variables: {{count}}",
     "resultSkipped": "Skipped: {{count}}",
     "importAnother": "Import another file"
   },
