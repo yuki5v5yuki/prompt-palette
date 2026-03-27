@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
-import { listVariablePackages, listVariables, getTemplatePackages } from "../desktop";
+import { listVariablePackages, listVariables } from "../desktop";
 
 interface TemplateEditorProps {
   template?: TemplateWithTags;
@@ -39,14 +39,15 @@ export default function TemplateEditor({
 
   // Variable packages
   const [allPackages, setAllPackages] = useState<VariablePackage[]>([]);
-  const [selectedPackageIds, setSelectedPackageIds] = useState<Set<string>>(new Set());
-  const [packageVariables, setPackageVariables] = useState<Variable[]>([]);
+  const [allVariables, setAllVariables] = useState<Variable[]>([]);
+  const [showAllVars, setShowAllVars] = useState(false);
+  const [varSearch, setVarSearch] = useState("");
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
 
   // Extract {{variable}} tokens from body for hint display
-  const bodyTokens = (body.match(/\{\{(\w+)\}\}/g) || [])
+  const bodyTokens = (body.match(/\{\{([^}]+)\}\}/g) || [])
     .map((m) => m.slice(2, -2))
     .filter((v, i, a) => a.indexOf(v) === i);
 
@@ -58,28 +59,17 @@ export default function TemplateEditor({
     })();
   }, []);
 
-  // Load template's assigned packages
-  useEffect(() => {
-    if (!template?.id) return;
-    (async () => {
-      const pkgs = await getTemplatePackages(template.id);
-      if (pkgs) {
-        setSelectedPackageIds(new Set(pkgs.map((p) => p.id)));
-      }
-    })();
-  }, [template?.id]);
-
-  // Load variables from selected packages
+  // Load all variables from all packages
   useEffect(() => {
     (async () => {
-      const allVars: Variable[] = [];
-      for (const pkgId of selectedPackageIds) {
-        const vars = await listVariables(pkgId);
-        if (vars) allVars.push(...vars);
+      const vars: Variable[] = [];
+      for (const pkg of allPackages) {
+        const pkgVars = await listVariables(pkg.id);
+        if (pkgVars) vars.push(...pkgVars);
       }
-      setPackageVariables(allVars);
+      setAllVariables(vars);
     })();
-  }, [selectedPackageIds]);
+  }, [allPackages]);
 
   // Auto-show preview when variables exist
   useEffect(() => {
@@ -100,28 +90,25 @@ export default function TemplateEditor({
     });
   };
 
-  const togglePackage = (packageId: string) => {
-    setSelectedPackageIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(packageId)) {
-        next.delete(packageId);
-      } else {
-        next.add(packageId);
-      }
-      return next;
-    });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !body.trim()) return;
+
+    // Auto-detect packages from {{key}} tokens in body
+    const usedPackageIds = new Set<string>();
+    for (const token of bodyTokens) {
+      const matchingVar = allVariables.find((v) => v.key === token);
+      if (matchingVar) {
+        usedPackageIds.add(matchingVar.packageId);
+      }
+    }
 
     const data: CreateTemplateInput | UpdateTemplateInput = {
       title: title.trim(),
       body: body.trim(),
       categoryId: categoryId || undefined,
       tagIds: Array.from(selectedTagIds),
-      packageIds: Array.from(selectedPackageIds),
+      packageIds: Array.from(usedPackageIds),
     };
     onSave(data);
   };
@@ -224,25 +211,6 @@ export default function TemplateEditor({
         </div>
       )}
 
-      {allPackages.length > 0 && (
-        <div className="form-group">
-          <label className="form-label">{t("variablePackage.packagesLabel")}</label>
-          <p className="form-hint">{t("variablePackage.selectHint")}</p>
-          <div className="tag-selector">
-            {allPackages.map((pkg) => (
-              <button
-                key={pkg.id}
-                type="button"
-                className={`tag-toggle ${selectedPackageIds.has(pkg.id) ? "active" : ""}`}
-                onClick={() => togglePackage(pkg.id)}
-              >
-                {pkg.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Body Editing Area - palette + textarea + preview */}
       <div className="form-group">
         <label className="form-label">{t("template.bodyLabel")}</label>
@@ -250,50 +218,99 @@ export default function TemplateEditor({
         <div className="body-editing-area">
           {/* Variable Palette */}
           <div className="variable-palette">
-            {/* Selected variables (flat — 1 package = 1 variable) */}
-            {packageVariables.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className="variable-chip"
-                onClick={() => insertVariable(v.key)}
-                title={t("variable.insertHint")}
-              >
-                {v.label}
-              </button>
-            ))}
+            {/* Used variables — always visible */}
+            {(() => {
+              const usedVars = allVariables.filter((v) => bodyTokens.includes(v.key));
+              const usedBuiltins = BUILTIN_VARS.filter((bv) => bodyTokens.includes(bv.key));
+              if (usedVars.length > 0 || usedBuiltins.length > 0) {
+                return (
+                  <div className="variable-palette-row">
+                    {usedVars.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        className="variable-chip variable-chip-active"
+                        onClick={() => insertVariable(v.key)}
+                        title={t("variable.insertHint")}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                    {usedBuiltins.map((bv) => (
+                      <button
+                        key={bv.key}
+                        type="button"
+                        className="variable-chip variable-chip-builtin variable-chip-active"
+                        onClick={() => insertVariable(bv.key)}
+                        title={t(bv.tooltipKey)}
+                      >
+                        {bv.key}
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
-            {/* Built-in variables */}
-            {BUILTIN_VARS.map((bv) => (
-              <button
-                key={bv.key}
-                type="button"
-                className="variable-chip variable-chip-builtin"
-                onClick={() => insertVariable(bv.key)}
-                title={t(bv.tooltipKey)}
-              >
-                {bv.key}
-              </button>
-            ))}
+            {/* Toggle to show all variables */}
+            <button
+              type="button"
+              className="variable-palette-toggle"
+              onClick={() => setShowAllVars(!showAllVars)}
+            >
+              {showAllVars ? "▼" : "▶"} {t("variable.allVariables")}({allVariables.length + BUILTIN_VARS.length})
+            </button>
 
-            {/* Guide messages */}
-            {allPackages.length > 0 && selectedPackageIds.size === 0 && (
-              <span className="variable-palette-hint">
-                {t("variable.selectPackageFirst")}
-              </span>
+            {/* Expandable: all variables + search */}
+            {showAllVars && (
+              <div className="variable-palette-expanded">
+                {allVariables.length > 3 && (
+                  <input
+                    type="text"
+                    className="variable-search"
+                    value={varSearch}
+                    onChange={(e) => setVarSearch(e.target.value)}
+                    placeholder={t("variable.searchPlaceholder")}
+                  />
+                )}
+
+                <div className="variable-palette-row">
+                  {allVariables
+                    .filter((v) => !varSearch || v.label.toLowerCase().includes(varSearch.toLowerCase()) || v.key.toLowerCase().includes(varSearch.toLowerCase()))
+                    .map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        className={`variable-chip ${bodyTokens.includes(v.key) ? "variable-chip-active" : ""}`}
+                        onClick={() => insertVariable(v.key)}
+                        title={t("variable.insertHint")}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+
+                  {/* Built-in variables */}
+                  {BUILTIN_VARS
+                    .filter((bv) => !varSearch || bv.key.toLowerCase().includes(varSearch.toLowerCase()))
+                    .map((bv) => (
+                      <button
+                        key={bv.key}
+                        type="button"
+                        className={`variable-chip variable-chip-builtin ${bodyTokens.includes(bv.key) ? "variable-chip-active" : ""}`}
+                        onClick={() => insertVariable(bv.key)}
+                        title={t(bv.tooltipKey)}
+                      >
+                        {bv.key}
+                      </button>
+                    ))}
+                </div>
+              </div>
             )}
 
-            {selectedPackageIds.size > 0 && packageVariables.length === 0 && (
-              <span className="variable-palette-hint">
-                {t("variablePackage.noVariablesInPackage")}
-              </span>
-            )}
-
-            {packageVariables.length > 0 && (
-              <span className="variable-palette-hint">
-                {t("variable.paletteHint")}
-              </span>
-            )}
+            <span className="variable-palette-hint">
+              {t("variable.paletteHint")}
+            </span>
           </div>
 
           {/* Textarea */}

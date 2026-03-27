@@ -769,6 +769,12 @@ body {
   color: #000000;
 }
 
+.variable-chip-active {
+  background: var(--accent);
+  color: #000000;
+  border-color: var(--accent);
+}
+
 .variable-chip-builtin {
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -779,6 +785,56 @@ body {
   background: var(--text-secondary);
   color: #fff;
   border-color: var(--text-secondary);
+}
+
+.variable-chip-builtin.variable-chip-active {
+  background: var(--accent);
+  color: #000000;
+  border-color: var(--accent);
+}
+
+.variable-palette-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.variable-palette-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.variable-palette-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.variable-palette-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.variable-search {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.variable-search:focus {
+  border-color: var(--accent);
 }
 
 .variable-chip-add {
