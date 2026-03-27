@@ -48,6 +48,7 @@
     "newCategory": "New Category",
     "nameLabel": "Category Name",
     "iconLabel": "Icon",
+    "noIcon": "No icon",
     "colorLabel": "Color",
     "placeholder": {
       "name": "Enter category name"

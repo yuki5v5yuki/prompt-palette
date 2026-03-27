@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
 import type { TemplateWithTags, VariableFormField, Category } from "../types";
+import { ICON_MAP, CategoryIcon } from "./CategoryIcon";
 import {
   listTemplatesByFrequency,
   listCategories,
@@ -316,7 +317,11 @@ export default function Launcher() {
                 className={`launcher-category-chip ${selectedCategoryId === cat.id ? "active" : ""}`}
                 onClick={() => { setSelectedCategoryId(cat.id); setSelectedIndex(0); }}
               >
-                {cat.icon && <span className="launcher-category-icon">{cat.icon}</span>}
+                {cat.icon && ICON_MAP[cat.icon] && (
+                  <span className="launcher-category-icon">
+                    <CategoryIcon name={cat.icon} size={13} />
+                  </span>
+                )}
                 {cat.name}
               </button>
             ))}

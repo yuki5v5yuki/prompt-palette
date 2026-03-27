@@ -48,6 +48,7 @@
     "newCategory": "新規カテゴリ",
     "nameLabel": "カテゴリ名",
     "iconLabel": "アイコン",
+    "noIcon": "アイコンなし",
     "colorLabel": "カラー",
     "placeholder": {
       "name": "カテゴリ名を入力"

@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Search, Check, X, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ICON_MAP, PRESET_ICONS, CategoryIcon } from "./CategoryIcon";
 import type {
   TemplateWithTags,
   Category,
@@ -49,48 +50,39 @@ interface CategoryGroup {
   templates: TemplateWithTags[];
 }
 
-// ─── Preset Colors ───
+// ─── Icon Preset Picker ───
 
-const PRESET_COLORS = [
-  "#EF4444", // red
-  "#F97316", // orange
-  "#EAB308", // yellow
-  "#22C55E", // green
-  "#06B6D4", // cyan
-  "#3B82F6", // blue
-  "#8B5CF6", // violet
-  "#EC4899", // pink
-  "#6B7280", // gray
-  "#1E293B", // dark
-];
-
-function ColorPicker({
+function IconPicker({
   value,
   onChange,
 }: {
   value: string;
-  onChange: (color: string) => void;
+  onChange: (icon: string) => void;
 }) {
   return (
-    <div className="color-preset-picker">
-      {PRESET_COLORS.map((c) => (
-        <button
-          key={c}
-          className={`color-swatch ${value.toLowerCase() === c.toLowerCase() ? "active" : ""}`}
-          style={{ backgroundColor: c }}
-          onClick={() => onChange(c)}
-          type="button"
-        />
-      ))}
-      <label className="color-swatch color-swatch-custom" title="カスタムカラー">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ position: "absolute", opacity: 0, width: 0, height: 0 }}
-        />
-        <span style={{ fontSize: "10px" }}>⋯</span>
-      </label>
+    <div className="icon-preset-picker">
+      <button
+        className={`icon-swatch ${!value ? "active" : ""}`}
+        onClick={() => onChange("")}
+        type="button"
+        title="アイコンなし"
+      >
+        <X size={12} />
+      </button>
+      {PRESET_ICONS.map((name) => {
+        const IconComponent = ICON_MAP[name];
+        return (
+          <button
+            key={name}
+            className={`icon-swatch ${value === name ? "active" : ""}`}
+            onClick={() => onChange(name)}
+            type="button"
+            title={name}
+          >
+            <IconComponent size={12} />
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -173,23 +165,18 @@ function SortableCategoryItem({
                 <button className="btn btn-primary btn-xs" onClick={onSaveCategory}><Check size={14} /></button>
                 <button className="btn btn-secondary btn-xs" onClick={onCancelCategoryEdit}><X size={14} /></button>
               </div>
-              <ColorPicker
-                value={categoryForm.color}
-                onChange={(c) => onCategoryFormChange("color", c)}
+              <IconPicker
+                value={categoryForm.icon}
+                onChange={(i) => onCategoryFormChange("icon", i)}
               />
             </div>
           </div>
         ) : (
           <>
             <span className={`category-chevron ${isExpanded ? "expanded" : ""}`}><ChevronRight size={14} /></span>
-            {group.category ? (
-              <span
-                className="category-dot"
-                style={{ backgroundColor: group.category.color || "var(--text-secondary)" }}
-              />
-            ) : (
-              <span className="category-dot" style={{ backgroundColor: "var(--border)" }} />
-            )}
+            <span className="category-icon">
+              <CategoryIcon name={(group.category?.icon) || "folder"} size={14} />
+            </span>
             <span className="category-name">
               {group.category?.name ?? "未分類"}
             </span>
@@ -351,12 +338,12 @@ export default function TemplateList() {
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryFormName, setCategoryFormName] = useState("");
-  const [categoryFormIcon, setCategoryFormIcon] = useState("");
+  const [categoryFormIcon, setCategoryFormIcon] = useState("folder");
   const [categoryFormColor, setCategoryFormColor] = useState("#534AB7");
 
   const resetCategoryForm = () => {
     setCategoryFormName("");
-    setCategoryFormIcon("");
+    setCategoryFormIcon("folder");
     setCategoryFormColor("#534AB7");
     setEditingCategoryId(null);
     setIsCreatingCategory(false);
@@ -365,7 +352,7 @@ export default function TemplateList() {
   const startEditCategory = (cat: Category) => {
     setEditingCategoryId(cat.id);
     setCategoryFormName(cat.name);
-    setCategoryFormIcon(cat.icon ?? "");
+    setCategoryFormIcon(cat.icon ?? "folder");
     setCategoryFormColor(cat.color ?? "#534AB7");
     setIsCreatingCategory(false);
   };
@@ -824,9 +811,9 @@ export default function TemplateList() {
                     <button className="btn btn-primary btn-xs" onClick={handleSaveCategory}><Check size={14} /></button>
                     <button className="btn btn-secondary btn-xs" onClick={resetCategoryForm}><X size={14} /></button>
                   </div>
-                  <ColorPicker
-                    value={categoryFormColor}
-                    onChange={(c) => setCategoryFormColor(c)}
+                  <IconPicker
+                    value={categoryFormIcon}
+                    onChange={(i) => setCategoryFormIcon(i)}
                   />
                 </div>
               </div>
