@@ -267,38 +267,24 @@ export default function VariablePackageManager() {
                     </button>
                   </div>
                 </div>
-                {/* Default value — dropdown if options exist, free text otherwise */}
+                {/* Default value — always a dropdown from options */}
                 <div className="form-row">
                   <div className="form-group form-group-half">
                     <label className="form-label">{t("variable.defaultLabel")}</label>
-                    <p className="form-hint">
-                      {editOptions.filter((s) => s.trim()).length > 0
-                        ? t("variable.defaultHintWithOptions")
-                        : t("variable.defaultHint")}
-                    </p>
-                    {editOptions.filter((s) => s.trim()).length > 0 ? (
-                      <select
-                        className="form-select"
-                        value={editDefault}
-                        onChange={(e) => setEditDefault(e.target.value)}
-                      >
-                        <option value="">{t("variable.noDefault")}</option>
-                        {editOptions
-                          .map((s) => s.trim())
-                          .filter(Boolean)
-                          .map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={editDefault}
-                        onChange={(e) => setEditDefault(e.target.value)}
-                        placeholder={t("variable.placeholder.default")}
-                      />
-                    )}
+                    <p className="form-hint">{t("variable.defaultHintWithOptions")}</p>
+                    <select
+                      className="form-select"
+                      value={editDefault}
+                      onChange={(e) => setEditDefault(e.target.value)}
+                    >
+                      <option value="">{t("variable.noDefault")}</option>
+                      {editOptions
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
                   </div>
                 </div>
                 <label className="option-freetext-check">
