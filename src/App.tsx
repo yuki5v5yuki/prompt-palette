@@ -22,6 +22,11 @@ function App() {
       : savedMode;
     document.documentElement.setAttribute("data-theme", resolved);
 
+    const savedFontSize = localStorage.getItem("fontSize");
+    if (savedFontSize && savedFontSize !== "medium") {
+      document.documentElement.setAttribute("data-font-size", savedFontSize);
+    }
+
     const checkOnboarding = async () => {
       const onboarded = await isOnboarded();
       const dismissed = localStorage.getItem("onboarding_done");

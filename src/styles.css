@@ -71,6 +71,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ─── Font Size Scaling ─── */
+[data-font-size="small"] body { zoom: 0.85; }
+[data-font-size="large"] body { zoom: 1.15; }
+[data-font-size="x-large"] body { zoom: 1.3; }
+
 /* ─── App Layout ─── */
 
 .app-layout {

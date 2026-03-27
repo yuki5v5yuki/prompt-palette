@@ -192,6 +192,11 @@
     "hotkeyError": "Invalid shortcut. Please try a different combination.",
     "hotkeyRequireModifier": "At least one modifier key (Ctrl, Alt, Shift) is required.",
     "hotkeySaved": "Hotkey saved!",
+    "fontSize": "Font Size",
+    "fontSizeSmall": "Small",
+    "fontSizeMedium": "Medium",
+    "fontSizeLarge": "Large",
+    "fontSizeXLarge": "X-Large",
     "about": "About"
   }
 }

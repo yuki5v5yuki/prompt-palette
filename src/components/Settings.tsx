@@ -70,6 +70,7 @@ function ShortcutDisplay({ shortcut }: { shortcut: string }) {
 }
 
 type ThemeMode = "system" | "light" | "dark";
+type FontSize = "small" | "medium" | "large" | "x-large";
 
 function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -80,10 +81,21 @@ function applyTheme(mode: ThemeMode) {
   document.documentElement.setAttribute("data-theme", resolved);
 }
 
+function applyFontSize(size: FontSize) {
+  if (size === "medium") {
+    document.documentElement.removeAttribute("data-font-size");
+  } else {
+    document.documentElement.setAttribute("data-font-size", size);
+  }
+}
+
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     return (localStorage.getItem("themeMode") as ThemeMode) || "system";
+  });
+  const [fontSize, setFontSize] = useState<FontSize>(() => {
+    return (localStorage.getItem("fontSize") as FontSize) || "medium";
   });
 
   const [hotkey, setHotkey] = useState("ctrl+space");
@@ -98,6 +110,11 @@ export default function Settings() {
     applyTheme(themeMode);
     localStorage.setItem("themeMode", themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    applyFontSize(fontSize);
+    localStorage.setItem("fontSize", fontSize);
+  }, [fontSize]);
 
   // Listen for OS theme changes when in system mode
   useEffect(() => {
@@ -203,6 +220,20 @@ export default function Settings() {
               >
                 {t("settings.themeDark")}
               </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">{t("settings.fontSize")}</label>
+            <div className="settings-toggle-group">
+              {(["small", "medium", "large", "x-large"] as FontSize[]).map((size) => (
+                <button
+                  key={size}
+                  className={`btn btn-sm ${fontSize === size ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => setFontSize(size)}
+                >
+                  {t(`settings.fontSize${size === "x-large" ? "XLarge" : size.charAt(0).toUpperCase() + size.slice(1)}`)}
+                </button>
+              ))}
             </div>
           </div>
         </div>

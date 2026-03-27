@@ -192,6 +192,11 @@
     "hotkeyError": "無効なショートカットです。別の組み合わせを試してください。",
     "hotkeyRequireModifier": "修飾キー（Ctrl, Alt, Shift）が1つ以上必要です。",
     "hotkeySaved": "ホットキーを保存しました！",
+    "fontSize": "文字サイズ",
+    "fontSizeSmall": "小",
+    "fontSizeMedium": "中",
+    "fontSizeLarge": "大",
+    "fontSizeXLarge": "特大",
     "about": "このアプリについて"
   }
 }
