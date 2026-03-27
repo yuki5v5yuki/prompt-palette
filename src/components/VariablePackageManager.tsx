@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import type { VariablePackage, Variable } from "../types";
 import {
   listVariablePackages,
@@ -305,7 +306,7 @@ export default function VariablePackageManager() {
                     {t("variable.options")}: {item.variable.options.join(", ")}
                   </span>
                 )}
-                <span className="variable-card-toggle">{editingId === item.pkg.id ? "▼" : "▶"}</span>
+                <span className="variable-card-toggle">{editingId === item.pkg.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</span>
               </div>
               <div className="item-actions">
                 <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => handleDelete(item.pkg.id)}>

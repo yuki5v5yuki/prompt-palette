@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
 import { listVariablePackages, listVariables } from "../desktop";
 
@@ -259,7 +260,7 @@ export default function TemplateEditor({
               className="variable-palette-toggle"
               onClick={() => setShowAllVars(!showAllVars)}
             >
-              {showAllVars ? "▼" : "▶"} {t("variable.allVariables")}({allVariables.length + BUILTIN_VARS.length})
+              {showAllVars ? <ChevronDown size={12} /> : <ChevronRight size={12} />} {t("variable.allVariables")}({allVariables.length + BUILTIN_VARS.length})
             </button>
 
             {/* Expandable: all variables + search */}
@@ -331,7 +332,7 @@ export default function TemplateEditor({
                 className="preview-toggle"
                 onClick={() => setShowPreview(!showPreview)}
               >
-                {t("variable.preview")} {showPreview ? "▲" : "▼"}
+                {t("variable.preview")} {showPreview ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
               </button>
               {showPreview && (
                 <div className="body-preview">

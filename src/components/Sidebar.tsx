@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { FileText, Tag, Variable, ArrowUpDown, Settings, type LucideIcon } from "lucide-react";
 
 export type NavTab = "templates" | "tags" | "packages" | "importExport" | "settings";
 
@@ -10,12 +11,12 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const { t, i18n } = useTranslation();
 
-  const tabs: { key: NavTab; label: string; icon: string }[] = [
-    { key: "templates", label: t("nav.templates"), icon: "📝" },
-    { key: "tags", label: t("nav.tags"), icon: "🏷️" },
-    { key: "packages", label: t("nav.packages"), icon: "📦" },
-    { key: "importExport", label: t("nav.importExport"), icon: "📤" },
-    { key: "settings", label: t("nav.settings"), icon: "⚙️" },
+  const tabs: { key: NavTab; label: string; icon: LucideIcon }[] = [
+    { key: "templates", label: t("nav.templates"), icon: FileText },
+    { key: "tags", label: t("nav.tags"), icon: Tag },
+    { key: "packages", label: t("nav.packages"), icon: Variable },
+    { key: "importExport", label: t("nav.importExport"), icon: ArrowUpDown },
+    { key: "settings", label: t("nav.settings"), icon: Settings },
   ];
 
   return (
@@ -32,7 +33,9 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             className={`sidebar-nav-item ${activeTab === tab.key ? "active" : ""}`}
             onClick={() => onTabChange(tab.key)}
           >
-            <span className="sidebar-nav-icon">{tab.icon}</span>
+            <span className="sidebar-nav-icon">
+              <tab.icon size={18} strokeWidth={activeTab === tab.key ? 2.2 : 1.8} />
+            </span>
             {tab.label}
           </button>
         ))}

@@ -21,6 +21,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Search, Check, X, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import type {
   TemplateWithTags,
   Category,
@@ -169,8 +170,8 @@ function SortableCategoryItem({
                   placeholder="カテゴリ名"
                   autoFocus
                 />
-                <button className="btn btn-primary btn-xs" onClick={onSaveCategory}>✓</button>
-                <button className="btn btn-secondary btn-xs" onClick={onCancelCategoryEdit}>✕</button>
+                <button className="btn btn-primary btn-xs" onClick={onSaveCategory}><Check size={14} /></button>
+                <button className="btn btn-secondary btn-xs" onClick={onCancelCategoryEdit}><X size={14} /></button>
               </div>
               <ColorPicker
                 value={categoryForm.color}
@@ -180,7 +181,7 @@ function SortableCategoryItem({
           </div>
         ) : (
           <>
-            <span className={`category-chevron ${isExpanded ? "expanded" : ""}`}>▶</span>
+            <span className={`category-chevron ${isExpanded ? "expanded" : ""}`}><ChevronRight size={14} /></span>
             {group.category ? (
               <span
                 className="category-dot"
@@ -195,8 +196,8 @@ function SortableCategoryItem({
             <span className="category-badge">{group.templates.length}</span>
             {group.category !== null && (
               <span className="category-actions" onClick={(e) => e.stopPropagation()}>
-                <button className="btn btn-ghost btn-xs" onClick={() => onEditCategory(group.category!)}>✏️</button>
-                <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => onDeleteCategory(group.category!.id)}>🗑️</button>
+                <button className="btn btn-ghost btn-xs" onClick={() => onEditCategory(group.category!)}><Pencil size={13} /></button>
+                <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => onDeleteCategory(group.category!.id)}><Trash2 size={13} /></button>
               </span>
             )}
           </>
@@ -764,7 +765,7 @@ export default function TemplateList() {
         {/* Search bar */}
         <div className="search-bar">
           <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon"><Search size={13} /></span>
             <input
               type="text"
               className="search-input"
@@ -820,8 +821,8 @@ export default function TemplateList() {
                       placeholder={t("category.placeholder.name", "カテゴリ名")}
                       autoFocus
                     />
-                    <button className="btn btn-primary btn-xs" onClick={handleSaveCategory}>✓</button>
-                    <button className="btn btn-secondary btn-xs" onClick={resetCategoryForm}>✕</button>
+                    <button className="btn btn-primary btn-xs" onClick={handleSaveCategory}><Check size={14} /></button>
+                    <button className="btn btn-secondary btn-xs" onClick={resetCategoryForm}><X size={14} /></button>
                   </div>
                   <ColorPicker
                     value={categoryFormColor}

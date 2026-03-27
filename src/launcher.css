@@ -1,14 +1,21 @@
 :root {
   --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f7;
+  --bg-secondary: #f7f7f5;
+  --bg-elevated: #ffffff;
   --text-primary: #1a1a1a;
-  --text-secondary: #6b6b6b;
-  --accent: #534ab7;
-  --accent-light: #eee9ff;
-  --border: #e0e0e0;
+  --text-secondary: #8a8a8a;
+  --accent: #ffd700;
+  --accent-hover: #e6c200;
+  --accent-light: #fff8dc;
+  --accent-text: #8b7500;
+  --accent-glow: rgba(255, 215, 0, 0.15);
+  --border: #e8e8e8;
   --radius: 12px;
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", monospace;
+  --transition-fast: 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -21,6 +28,8 @@ body {
   font-family: var(--font-family);
   background: transparent;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Launcher Container ─── */
@@ -28,11 +37,12 @@ body {
 .launcher {
   background: var(--bg-primary);
   border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   max-height: 480px;
+  border: 1px solid rgba(255, 215, 0, 0.12);
 }
 
 /* ─── Search Bar ─── */
@@ -50,12 +60,16 @@ body {
   background: var(--bg-secondary);
   color: var(--text-primary);
   font-size: 15px;
+  font-family: var(--font-family);
   outline: none;
-  transition: border-color 0.15s;
+  transition: all var(--transition-normal);
+  letter-spacing: -0.01em;
 }
 
 .launcher-input:focus {
   border-color: var(--accent);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .launcher-input::placeholder {
@@ -94,18 +108,21 @@ body {
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: all var(--transition-normal);
 }
 
 .launcher-category-chip:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-glow);
 }
 
 .launcher-category-chip.active {
   background: var(--accent);
-  color: white;
+  color: #1a1a00;
   border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(255, 215, 0, 0.25);
 }
 
 .launcher-category-icon {
@@ -121,11 +138,20 @@ body {
   padding: 4px;
 }
 
+.launcher-results::-webkit-scrollbar {
+  width: 5px;
+}
+
+.launcher-results::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
 .launcher-item {
   padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.1s;
+  transition: all var(--transition-fast);
   margin-bottom: 2px;
 }
 
@@ -134,11 +160,16 @@ body {
   background: var(--accent-light);
 }
 
+.launcher-item.selected {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
 .launcher-item-title {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 2px;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .launcher-item-tags {
@@ -151,8 +182,9 @@ body {
   font-size: 10px;
   padding: 1px 6px;
   background: var(--accent-light);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: 8px;
+  font-weight: 500;
 }
 
 .launcher-item-preview {
@@ -188,7 +220,7 @@ body {
   color: var(--text-secondary);
   padding: 2px 6px;
   border-radius: 4px;
-  transition: background 0.1s;
+  transition: all var(--transition-fast);
 }
 
 .launcher-back-btn:hover {
@@ -203,6 +235,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .launcher-body-preview {
@@ -217,6 +250,8 @@ body {
   color: var(--text-secondary);
   display: block;
   margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .launcher-body-preview-text {
@@ -232,7 +267,7 @@ body {
 
 .launcher-preview-var {
   background: var(--accent-light);
-  color: var(--accent);
+  color: var(--accent-text);
   padding: 0 3px;
   border-radius: 3px;
   font-weight: 600;
@@ -277,13 +312,15 @@ body {
   background: var(--bg-secondary);
   color: var(--text-primary);
   font-size: 14px;
+  font-family: var(--font-family);
   outline: none;
-  transition: border-color 0.15s;
+  transition: all var(--transition-normal);
 }
 
 .launcher-var-input:focus {
   border-color: var(--accent);
   background: var(--bg-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .launcher-var-input::placeholder {
@@ -312,18 +349,21 @@ body {
   font-size: 12px;
   cursor: pointer;
   color: var(--text-primary);
-  transition: all 0.15s;
+  transition: all var(--transition-normal);
 }
 
 .launcher-option-item:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-glow);
 }
 
 .launcher-option-item.selected {
   background: var(--accent);
-  color: white;
+  color: #1a1a00;
   border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(255, 215, 0, 0.2);
 }
 
 .launcher-var-actions {
@@ -335,15 +375,24 @@ body {
 .launcher-var-submit {
   padding: 8px 20px;
   background: var(--accent);
-  color: white;
+  color: #1a1a00;
   border: none;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: var(--font-family);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all var(--transition-normal);
+  box-shadow: 0 1px 3px rgba(255, 215, 0, 0.3);
 }
 
 .launcher-var-submit:hover {
-  opacity: 0.9;
+  background: var(--accent-hover);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.launcher-var-submit:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(255, 215, 0, 0.2);
 }
