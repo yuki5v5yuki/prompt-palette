@@ -79,6 +79,8 @@
     "detailSettingsHint": "デフォルト値や選択肢を設定できます",
     "addOption": "選択肢を追加",
     "allowFreeText": "選択肢以外の値も入力できるようにする",
+    "required": "選択必須にする",
+    "requiredHint": "テンプレート使用時に必ず選択が必要です",
     "labelHint": "テンプレート使用時に表示される名前です",
     "defaultHint": "未入力時に使われる値です",
     "defaultHintWithOptions": "最初から選ばれている値です",
@@ -114,6 +116,7 @@
     "submit": "確定 (Enter)",
     "inputPlaceholder": "入力してください",
     "comboHint": "候補から選択、または自由に入力",
+    "requiredError": "必須項目を入力してください",
     "templatePreviewLabel": "挿入される位置："
   },
   "tag": {

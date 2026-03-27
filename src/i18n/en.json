@@ -79,6 +79,8 @@
     "detailSettingsHint": "Set default values and options",
     "addOption": "Add option",
     "allowFreeText": "Allow custom values besides the options",
+    "required": "Required",
+    "requiredHint": "Must be filled in when using the template",
     "labelHint": "Name shown when using the template",
     "defaultHint": "Value used when left empty",
     "defaultHintWithOptions": "Value selected by default",
@@ -114,6 +116,7 @@
     "submit": "Submit (Enter)",
     "inputPlaceholder": "Enter a value",
     "comboHint": "Select from options or type freely",
+    "requiredError": "Please fill in required fields",
     "templatePreviewLabel": "Inserted at:"
   },
   "tag": {

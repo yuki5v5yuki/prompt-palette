@@ -31,6 +31,7 @@ export default function VariablePackageManager() {
   const [editDefault, setEditDefault] = useState("");
   const [editOptions, setEditOptions] = useState<string[]>([]);
   const [editAllowFreeText, setEditAllowFreeText] = useState(true);
+  const [editRequired, setEditRequired] = useState(false);
 
   const reload = useCallback(async () => {
     const pkgs = await listVariablePackages();
@@ -84,6 +85,7 @@ export default function VariablePackageManager() {
     setEditDefault(item.variable?.defaultValue ?? "");
     setEditOptions(item.variable?.options ?? []);
     setEditAllowFreeText(item.variable?.allowFreeText ?? true);
+    setEditRequired(item.variable?.required ?? false);
   };
 
   const resetEdit = () => {
@@ -92,6 +94,7 @@ export default function VariablePackageManager() {
     setEditDefault("");
     setEditOptions([]);
     setEditAllowFreeText(true);
+    setEditRequired(false);
   };
 
   const handleSaveEdit = async () => {
@@ -115,6 +118,7 @@ export default function VariablePackageManager() {
         defaultValue: editDefault.trim() || undefined,
         options: optionsArray,
         allowFreeText: editAllowFreeText,
+        required: editRequired,
       });
     } else {
       // Variable doesn't exist yet (legacy data) — create it
@@ -125,6 +129,7 @@ export default function VariablePackageManager() {
         defaultValue: editDefault.trim() || undefined,
         options: optionsArray,
         allowFreeText: editAllowFreeText,
+        required: editRequired,
       });
     }
 
@@ -294,6 +299,14 @@ export default function VariablePackageManager() {
                     onChange={(e) => setEditAllowFreeText(e.target.checked)}
                   />
                   {t("variable.allowFreeText")}
+                </label>
+                <label className="option-freetext-check">
+                  <input
+                    type="checkbox"
+                    checked={editRequired}
+                    onChange={(e) => setEditRequired(e.target.checked)}
+                  />
+                  {t("variable.required")}
                 </label>
                 <div className="variable-card-actions">
                   <button type="button" className="btn btn-secondary btn-xs" onClick={resetEdit}>

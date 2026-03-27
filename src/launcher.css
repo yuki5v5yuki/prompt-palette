@@ -208,6 +208,16 @@ body {
   color: var(--text-primary);
 }
 
+.launcher-required-mark {
+  color: #e53935;
+  font-weight: 700;
+}
+
+.launcher-var-field-error .launcher-var-input {
+  border-color: #e53935;
+  background: #fff5f5;
+}
+
 .launcher-var-input {
   width: 100%;
   padding: 8px 12px;
