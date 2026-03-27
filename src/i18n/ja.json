@@ -116,7 +116,8 @@
     "inputPlaceholder": "入力してください",
     "comboHint": "候補から選択、または自由に入力",
     "requiredError": "必須項目を入力してください",
-    "templatePreviewLabel": "挿入される位置："
+    "templatePreviewLabel": "挿入される位置：",
+    "allCategories": "すべて"
   },
   "tag": {
     "title": "タグ管理",

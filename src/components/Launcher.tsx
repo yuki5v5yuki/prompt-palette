@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
-import type { TemplateWithTags, VariableFormField } from "../types";
+import type { TemplateWithTags, VariableFormField, Category } from "../types";
 import {
   listTemplatesByFrequency,
+  listCategories,
   recordTemplateUse,
   getTemplateFormSchema,
   interpolateTemplate,
@@ -33,6 +34,10 @@ export default function Launcher() {
   const listRef = useRef<HTMLDivElement>(null);
   const fuseRef = useRef<Fuse<TemplateWithTags> | null>(null);
 
+  // Category filter state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
   // Variable input state
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateWithTags | null>(null);
   const [formFields, setFormFields] = useState<VariableFormField[]>([]);
@@ -42,11 +47,17 @@ export default function Launcher() {
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadTemplates = useCallback(async () => {
-    const tpls = await listTemplatesByFrequency();
-    const list = tpls ?? [];
-    setTemplates(list);
-    setResults(list);
-    fuseRef.current = new Fuse(list, fuseOptions);
+    try {
+      const tpls = await listTemplatesByFrequency();
+      const list = tpls ?? [];
+      setTemplates(list);
+      setResults(list);
+      fuseRef.current = new Fuse(list, fuseOptions);
+    } catch {}
+    try {
+      const cats = await listCategories();
+      setCategories(cats ?? []);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -82,9 +93,16 @@ export default function Launcher() {
     }
   }, [step]);
 
+  // Filter results by selected category
+  const displayedResults = useMemo(() => {
+    if (selectedCategoryId === null) return results;
+    return results.filter((t) => t.categoryId === selectedCategoryId);
+  }, [results, selectedCategoryId]);
+
   const resetLauncher = useCallback(() => {
     setStep("search");
     setQuery("");
+    setSelectedCategoryId(null);
     setSelectedTemplate(null);
     setFormFields([]);
     setFormValues({});
@@ -100,6 +118,15 @@ export default function Launcher() {
     } catch {}
     resetLauncher();
   }, [resetLauncher]);
+
+  // Close launcher when window loses focus (click outside)
+  useEffect(() => {
+    const onBlur = () => {
+      hideLauncher();
+    };
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  }, [hideLauncher]);
 
   const pasteText = useCallback(async (text: string) => {
     try {
@@ -204,7 +231,7 @@ export default function Launcher() {
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setSelectedIndex((prev) => Math.min(prev + 1, results.length - 1));
+          setSelectedIndex((prev) => Math.min(prev + 1, displayedResults.length - 1));
           break;
         case "ArrowUp":
           e.preventDefault();
@@ -212,8 +239,8 @@ export default function Launcher() {
           break;
         case "Enter":
           e.preventDefault();
-          if (results[selectedIndex]) {
-            selectTemplate(results[selectedIndex]);
+          if (displayedResults[selectedIndex]) {
+            selectTemplate(displayedResults[selectedIndex]);
           }
           break;
         case "Escape":
@@ -222,7 +249,7 @@ export default function Launcher() {
           break;
       }
     },
-    [results, selectedIndex, selectTemplate, hideLauncher]
+    [displayedResults, selectedIndex, selectTemplate, hideLauncher]
   );
 
   const handleVariableKeyDown = useCallback(
@@ -275,11 +302,31 @@ export default function Launcher() {
             autoFocus
           />
         </div>
+        {categories.length > 0 && (
+          <div className="launcher-categories">
+            <button
+              className={`launcher-category-chip ${selectedCategoryId === null ? "active" : ""}`}
+              onClick={() => { setSelectedCategoryId(null); setSelectedIndex(0); }}
+            >
+              {t("launcher.allCategories")}
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={`launcher-category-chip ${selectedCategoryId === cat.id ? "active" : ""}`}
+                onClick={() => { setSelectedCategoryId(cat.id); setSelectedIndex(0); }}
+              >
+                {cat.icon && <span className="launcher-category-icon">{cat.icon}</span>}
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="launcher-results" ref={listRef}>
-          {results.length === 0 && (
+          {displayedResults.length === 0 && (
             <div className="launcher-empty">{t("launcher.noResults")}</div>
           )}
-          {results.map((tpl, index) => (
+          {displayedResults.map((tpl, index) => (
             <div
               key={tpl.id}
               className={`launcher-item ${index === selectedIndex ? "selected" : ""}`}
