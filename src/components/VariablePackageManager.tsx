@@ -305,7 +305,7 @@ export default function VariablePackageManager() {
                     {t("variable.options")}: {item.variable.options.join(", ")}
                   </span>
                 )}
-                <span className="variable-card-toggle">{editingId === item.pkg.id ? "▲" : "▼"}</span>
+                <span className="variable-card-toggle">{editingId === item.pkg.id ? "▼" : "▶"}</span>
               </div>
               <div className="item-actions">
                 <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => handleDelete(item.pkg.id)}>
