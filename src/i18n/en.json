@@ -81,6 +81,8 @@
     "allowFreeText": "Allow custom values besides the options",
     "labelHint": "Name shown when using the template",
     "defaultHint": "Value used when left empty",
+    "defaultHintWithOptions": "Value selected by default",
+    "noDefault": "None",
     "optionsHint": "Choices shown as a dropdown when using the template",
     "placeholder": {
       "key": "e.g. customer_name",

@@ -223,19 +223,6 @@ export default function VariablePackageManager() {
                     />
                   </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-group form-group-half">
-                    <label className="form-label">{t("variable.defaultLabel")}</label>
-                    <p className="form-hint">{t("variable.defaultHint")}</p>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editDefault}
-                      onChange={(e) => setEditDefault(e.target.value)}
-                      placeholder={t("variable.placeholder.default")}
-                    />
-                  </div>
-                </div>
                 <div className="form-group">
                   <label className="form-label">{t("variable.optionsLabel")}</label>
                   <p className="form-hint">{t("variable.optionsHint")}</p>
@@ -256,7 +243,15 @@ export default function VariablePackageManager() {
                         <button
                           type="button"
                           className="btn-icon btn-icon-danger"
-                          onClick={() => setEditOptions(editOptions.filter((_, i) => i !== idx))}
+                          onClick={() => {
+                            const removed = editOptions[idx];
+                            const next = editOptions.filter((_, i) => i !== idx);
+                            setEditOptions(next);
+                            // Clear default if it was the removed option
+                            if (editDefault === removed.trim()) {
+                              setEditDefault("");
+                            }
+                          }}
                           title={t("common.delete")}
                         >
                           x
@@ -270,6 +265,40 @@ export default function VariablePackageManager() {
                     >
                       + {t("variable.addOption")}
                     </button>
+                  </div>
+                </div>
+                {/* Default value — dropdown if options exist, free text otherwise */}
+                <div className="form-row">
+                  <div className="form-group form-group-half">
+                    <label className="form-label">{t("variable.defaultLabel")}</label>
+                    <p className="form-hint">
+                      {editOptions.filter((s) => s.trim()).length > 0
+                        ? t("variable.defaultHintWithOptions")
+                        : t("variable.defaultHint")}
+                    </p>
+                    {editOptions.filter((s) => s.trim()).length > 0 ? (
+                      <select
+                        className="form-select"
+                        value={editDefault}
+                        onChange={(e) => setEditDefault(e.target.value)}
+                      >
+                        <option value="">{t("variable.noDefault")}</option>
+                        {editOptions
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={editDefault}
+                        onChange={(e) => setEditDefault(e.target.value)}
+                        placeholder={t("variable.placeholder.default")}
+                      />
+                    )}
                   </div>
                 </div>
                 <label className="option-freetext-check">

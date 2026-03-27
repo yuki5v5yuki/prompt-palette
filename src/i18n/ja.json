@@ -81,6 +81,8 @@
     "allowFreeText": "選択肢以外の値も入力できるようにする",
     "labelHint": "テンプレート使用時に表示される名前です",
     "defaultHint": "未入力時に使われる値です",
+    "defaultHintWithOptions": "最初から選ばれている値です",
+    "noDefault": "なし",
     "optionsHint": "テンプレート使用時にドロップダウンで選べる候補です",
     "placeholder": {
       "key": "例: customer_name",

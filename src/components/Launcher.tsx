@@ -318,7 +318,7 @@ export default function Launcher() {
                 }
                 onFocus={() => setActiveFieldIndex(idx)}
               >
-                <option value="">{field.defaultValue || t("launcher.inputPlaceholder")}</option>
+                <option value="">{t("launcher.inputPlaceholder")}</option>
                 {field.options.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
