@@ -24,6 +24,10 @@ export default function VariablePackageManager() {
   // Creating new variable
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newOptions, setNewOptions] = useState<string[]>([]);
+  const [newDefault, setNewDefault] = useState("");
+  const [newAllowFreeText, setNewAllowFreeText] = useState(true);
+  const [newRequired, setNewRequired] = useState(false);
 
   // Editing existing variable (inline settings)
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,6 +54,15 @@ export default function VariablePackageManager() {
     reload();
   }, [reload]);
 
+  const resetCreate = () => {
+    setIsCreating(false);
+    setNewName("");
+    setNewOptions([]);
+    setNewDefault("");
+    setNewAllowFreeText(true);
+    setNewRequired(false);
+  };
+
   // --- Create new variable (package + auto-variable) ---
   const handleCreate = async () => {
     const trimmed = newName.trim();
@@ -58,15 +71,19 @@ export default function VariablePackageManager() {
     // Create package
     const pkg = await createVariablePackage({ name: trimmed });
     if (pkg) {
-      // Auto-create variable with same name
+      const filteredOptions = newOptions.map((s) => s.trim()).filter(Boolean);
+      const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
       await createVariable({
         packageId: pkg.id,
         key: trimmed,
         label: trimmed,
+        defaultValue: newDefault.trim() || undefined,
+        options: optionsArray,
+        allowFreeText: newAllowFreeText,
+        required: newRequired,
       });
     }
-    setNewName("");
-    setIsCreating(false);
+    resetCreate();
     await reload();
   };
 
@@ -145,8 +162,8 @@ export default function VariablePackageManager() {
           className="btn btn-primary btn-sm"
           onClick={() => {
             resetEdit();
+            resetCreate();
             setIsCreating(true);
-            setNewName("");
           }}
         >
           + {t("variablePackage.newPackage")}
@@ -155,26 +172,110 @@ export default function VariablePackageManager() {
 
       {/* New variable form */}
       {isCreating && (
-        <div className="inline-form">
-          <div className="form-row">
-            <input
-              type="text"
-              className="form-input"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder={t("variablePackage.placeholder.name")}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); handleCreate(); }
-                if (e.key === "Escape") setIsCreating(false);
-              }}
-            />
-            <button className="btn btn-primary btn-sm" onClick={handleCreate}>
-              {t("common.save")}
-            </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setIsCreating(false)}>
-              {t("common.cancel")}
-            </button>
+        <div className="package-item">
+          <div className="variable-card-body">
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">{t("variablePackage.nameLabel")}</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder={t("variablePackage.placeholder.name")}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") resetCreate();
+                  }}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">{t("variable.optionsLabel")}</label>
+              <p className="form-hint">{t("variable.optionsHint")}</p>
+              <div className="option-list">
+                {newOptions.map((opt, idx) => (
+                  <div key={idx} className="option-item">
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...newOptions];
+                        next[idx] = e.target.value;
+                        setNewOptions(next);
+                      }}
+                      placeholder={`${t("variable.optionsLabel")} ${idx + 1}`}
+                    />
+                    <button
+                      type="button"
+                      className="btn-icon btn-icon-danger"
+                      onClick={() => {
+                        const removed = newOptions[idx];
+                        const next = newOptions.filter((_, i) => i !== idx);
+                        setNewOptions(next);
+                        if (newDefault === removed.trim()) {
+                          setNewDefault("");
+                        }
+                      }}
+                      title={t("common.delete")}
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="option-add-btn"
+                  onClick={() => setNewOptions([...newOptions, ""])}
+                >
+                  + {t("variable.addOption")}
+                </button>
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group form-group-half">
+                <label className="form-label">{t("variable.defaultLabel")}</label>
+                <p className="form-hint">{t("variable.defaultHintWithOptions")}</p>
+                <select
+                  className="form-select"
+                  value={newDefault}
+                  onChange={(e) => setNewDefault(e.target.value)}
+                >
+                  <option value="">{t("variable.noDefault")}</option>
+                  {newOptions
+                    .map((s) => s.trim())
+                    .filter(Boolean)
+                    .map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+            <label className="option-freetext-check">
+              <input
+                type="checkbox"
+                checked={newAllowFreeText}
+                onChange={(e) => setNewAllowFreeText(e.target.checked)}
+              />
+              {t("variable.allowFreeText")}
+            </label>
+            <label className="option-freetext-check">
+              <input
+                type="checkbox"
+                checked={newRequired}
+                onChange={(e) => setNewRequired(e.target.checked)}
+              />
+              {t("variable.required")}
+            </label>
+            <div className="variable-card-actions">
+              <button type="button" className="btn btn-secondary btn-xs" onClick={resetCreate}>
+                {t("common.cancel")}
+              </button>
+              <button type="button" className="btn btn-primary btn-xs" onClick={handleCreate} style={{ marginLeft: 6 }}>
+                {t("common.save")}
+              </button>
+            </div>
           </div>
         </div>
       )}
