@@ -16,8 +16,11 @@ function App() {
 
   // Apply saved theme + check onboarding on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
+    const savedMode = localStorage.getItem("themeMode") || "system";
+    const resolved = savedMode === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : savedMode;
+    document.documentElement.setAttribute("data-theme", resolved);
 
     const checkOnboarding = async () => {
       const onboarded = await isOnboarded();

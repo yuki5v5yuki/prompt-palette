@@ -69,10 +69,21 @@ function ShortcutDisplay({ shortcut }: { shortcut: string }) {
   );
 }
 
+type ThemeMode = "system" | "light" | "dark";
+
+function getSystemTheme(): "light" | "dark" {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(mode: ThemeMode) {
+  const resolved = mode === "system" ? getSystemTheme() : mode;
+  document.documentElement.setAttribute("data-theme", resolved);
+}
+
 export default function Settings() {
   const { t, i18n } = useTranslation();
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    return (localStorage.getItem("theme") as "light" | "dark") || "light";
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    return (localStorage.getItem("themeMode") as ThemeMode) || "system";
   });
 
   const [hotkey, setHotkey] = useState("ctrl+space");
@@ -84,9 +95,19 @@ export default function Settings() {
   const recorderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    applyTheme(themeMode);
+    localStorage.setItem("themeMode", themeMode);
+  }, [themeMode]);
+
+  // Listen for OS theme changes when in system mode
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => {
+      if (themeMode === "system") applyTheme("system");
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [themeMode]);
 
   // Load saved hotkey on mount
   useEffect(() => {
@@ -165,14 +186,20 @@ export default function Settings() {
             <label className="form-label">{t("settings.theme")}</label>
             <div className="settings-toggle-group">
               <button
-                className={`btn btn-sm ${theme === "light" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => setTheme("light")}
+                className={`btn btn-sm ${themeMode === "system" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setThemeMode("system")}
+              >
+                {t("settings.themeSystem", "システム")}
+              </button>
+              <button
+                className={`btn btn-sm ${themeMode === "light" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setThemeMode("light")}
               >
                 {t("settings.themeLight")}
               </button>
               <button
-                className={`btn btn-sm ${theme === "dark" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => setTheme("dark")}
+                className={`btn btn-sm ${themeMode === "dark" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setThemeMode("dark")}
               >
                 {t("settings.themeDark")}
               </button>
