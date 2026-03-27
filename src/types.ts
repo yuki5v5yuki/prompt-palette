@@ -53,6 +53,7 @@ export interface Variable {
   options: string[] | null;
   sortOrder: number;
   allowFreeText: boolean;
+  required: boolean;
 }
 
 // --- Input types ---
@@ -115,6 +116,7 @@ export interface CreateVariableInput {
   options?: string[];
   sortOrder?: number;
   allowFreeText?: boolean;
+  required?: boolean;
 }
 
 export interface UpdateVariableInput {
@@ -124,6 +126,7 @@ export interface UpdateVariableInput {
   options?: string[];
   sortOrder?: number;
   allowFreeText?: boolean;
+  required?: boolean;
 }
 
 export interface VariableFormField {
@@ -133,6 +136,7 @@ export interface VariableFormField {
   options: string[] | null;
   isBuiltin: boolean;
   allowFreeText: boolean;
+  required: boolean;
   variableId: string | null;
 }
 

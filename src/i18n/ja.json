@@ -23,7 +23,7 @@
     "templates": "テンプレート",
     "categories": "カテゴリ",
     "tags": "タグ",
-    "packages": "変数パッケージ",
+    "packages": "変数",
     "importExport": "インポート/エクスポート",
     "settings": "設定"
   },
@@ -66,6 +66,11 @@
     "detectedVars": "検出された変数",
     "empty": "変数が定義されていません。本文に {{変数名}} を入れて変数を追加できます。",
     "insertHint": "クリックで本文に挿入",
+    "paletteHint": "クリックすると本文のカーソル位置に挿入されます",
+    "selectPackageFirst": "上の「変数」を選択すると、ここに変数ボタンが表示されます",
+    "builtinClipboard": "貼り付け時のクリップボード内容に置き換わります",
+    "builtinToday": "今日の日付に置き換わります（例: 2026/03/26）",
+    "builtinNow": "現在の日時に置き換わります",
     "quickAdd": "変数をすばやく追加",
     "preview": "プレビュー",
     "builtinVars": "組み込み変数",
@@ -73,7 +78,14 @@
     "detailSettings": "変数の詳細設定",
     "detailSettingsHint": "デフォルト値や選択肢を設定できます",
     "addOption": "選択肢を追加",
-    "allowFreeText": "フリーテキストの入力も許可する",
+    "allowFreeText": "選択肢以外の値も入力できるようにする",
+    "required": "選択必須にする",
+    "requiredHint": "テンプレート使用時に必ず選択が必要です",
+    "labelHint": "テンプレート使用時に表示される名前です",
+    "defaultHint": "未入力時に使われる値です",
+    "defaultHintWithOptions": "最初から選ばれている値です",
+    "noDefault": "なし",
+    "optionsHint": "テンプレート使用時にドロップダウンで選べる候補です",
     "placeholder": {
       "key": "例: customer_name",
       "label": "例: お客様名",
@@ -82,18 +94,30 @@
     }
   },
   "variablePackage": {
-    "title": "変数パッケージ管理",
-    "packagesLabel": "変数パッケージ",
-    "noPackagesHint": "変数パッケージがありません",
-    "newPackage": "新規パッケージ",
-    "nameLabel": "パッケージ名",
+    "title": "変数管理",
+    "packagesLabel": "変数",
+    "selectHint": "選択すると、本文エリアに変数ボタンが表示されます",
+    "noPackagesHint": "変数がありません",
+    "noVariablesInPackage": "選択中の変数に設定がありません",
+    "newPackage": "新規変数",
+    "nameLabel": "変数名",
     "descriptionLabel": "説明",
     "placeholder": {
-      "name": "パッケージ名を入力",
-      "description": "パッケージの説明（省略可）"
+      "name": "変数名を入力（例: お客様名）",
+      "description": "変数の説明（省略可）"
     },
     "variableCount": "{{count}}個の変数",
-    "empty": "変数パッケージがありません。"
+    "empty": "変数がありません。",
+    "emptyGuide": "＋ボタンで変数を追加してください。変数はテンプレート使用時に入力フォームになります。"
+  },
+  "launcher": {
+    "searchPlaceholder": "テンプレートを検索...",
+    "noResults": "一致するテンプレートがありません",
+    "submit": "確定 (Enter)",
+    "inputPlaceholder": "入力してください",
+    "comboHint": "候補から選択、または自由に入力",
+    "requiredError": "必須項目を入力してください",
+    "templatePreviewLabel": "挿入される位置："
   },
   "tag": {
     "title": "タグ管理",
@@ -124,7 +148,7 @@
     "previewTemplates": "テンプレート",
     "previewCategories": "カテゴリ",
     "previewTags": "タグ",
-    "previewPackages": "変数パッケージ",
+    "previewPackages": "変数",
     "conflictStrategy": "重複時の処理",
     "strategy": {
       "skip": "スキップ",
@@ -137,7 +161,7 @@
     "resultTemplates": "テンプレート: {{count}}件",
     "resultCategories": "カテゴリ: {{count}}件",
     "resultTags": "タグ: {{count}}件",
-    "resultPackages": "変数パッケージ: {{count}}件",
+    "resultPackages": "変数: {{count}}件",
     "resultSkipped": "スキップ: {{count}}件",
     "importAnother": "別のファイルをインポート"
   },

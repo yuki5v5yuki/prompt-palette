@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import Fuse from "fuse.js";
 import type { TemplateWithTags, VariableFormField } from "../types";
 import {
@@ -22,6 +23,7 @@ const fuseOptions = {
 type LauncherStep = "search" | "variables";
 
 export default function Launcher() {
+  const { t } = useTranslation();
   const [step, setStep] = useState<LauncherStep>("search");
   const [query, setQuery] = useState("");
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
@@ -36,6 +38,7 @@ export default function Launcher() {
   const [formFields, setFormFields] = useState<VariableFormField[]>([]);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [activeFieldIndex, setActiveFieldIndex] = useState(0);
+  const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadTemplates = useCallback(async () => {
@@ -86,6 +89,7 @@ export default function Launcher() {
     setFormFields([]);
     setFormValues({});
     setActiveFieldIndex(0);
+    setValidationErrors(new Set());
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
@@ -109,6 +113,16 @@ export default function Launcher() {
         navigator.clipboard.writeText(text);
       }
     }
+  }, []);
+
+  const updateFormValue = useCallback((key: string, value: string) => {
+    setFormValues((prev) => ({ ...prev, [key]: value }));
+    setValidationErrors((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
   }, []);
 
   const saveInputHistory = useCallback(async (fields: VariableFormField[], values: Record<string, string>) => {
@@ -150,6 +164,25 @@ export default function Launcher() {
 
   const submitVariables = useCallback(async () => {
     if (!selectedTemplate) return;
+
+    // Validate required fields
+    const errors = new Set<string>();
+    for (const f of formFields) {
+      if (f.required && !(formValues[f.key] ?? "").trim()) {
+        errors.add(f.key);
+      }
+    }
+    if (errors.size > 0) {
+      setValidationErrors(errors);
+      // Focus first error field
+      const firstErrorIdx = formFields.findIndex((f) => errors.has(f.key));
+      if (firstErrorIdx >= 0) {
+        setActiveFieldIndex(firstErrorIdx);
+        formRefs.current[firstErrorIdx]?.focus();
+      }
+      return;
+    }
+    setValidationErrors(new Set());
 
     await recordTemplateUse(selectedTemplate.id);
 
@@ -236,7 +269,7 @@ export default function Launcher() {
             ref={inputRef}
             type="text"
             className="launcher-input"
-            placeholder="テンプレートを検索..."
+            placeholder={t("launcher.searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             autoFocus
@@ -244,7 +277,7 @@ export default function Launcher() {
         </div>
         <div className="launcher-results" ref={listRef}>
           {results.length === 0 && (
-            <div className="launcher-empty">一致するテンプレートがありません</div>
+            <div className="launcher-empty">{t("launcher.noResults")}</div>
           )}
           {results.map((tpl, index) => (
             <div
@@ -272,6 +305,22 @@ export default function Launcher() {
   }
 
   // --- Variable Input Step ---
+
+  // Build a short preview showing where variables appear in the body
+  const buildBodyPreview = () => {
+    if (!selectedTemplate) return null;
+    const body = selectedTemplate.body;
+    // Truncate to ~120 chars and highlight {{variables}}
+    const truncated = body.length > 120 ? body.slice(0, 120) + "..." : body;
+    const parts = truncated.split(/(\{\{[^}]+\}\})/g);
+    return parts.map((part, i) => {
+      if (/^\{\{[^}]+\}\}$/.test(part)) {
+        return <span key={i} className="launcher-preview-var">{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   return (
     <div className="launcher" onKeyDown={handleVariableKeyDown}>
       <div className="launcher-var-header">
@@ -280,21 +329,30 @@ export default function Launcher() {
         </button>
         <span className="launcher-var-title">{selectedTemplate?.title}</span>
       </div>
+      {selectedTemplate && (
+        <div className="launcher-body-preview">
+          <span className="launcher-body-preview-label">{t("launcher.templatePreviewLabel")}</span>
+          <span className="launcher-body-preview-text">{buildBodyPreview()}</span>
+        </div>
+      )}
       <div className="launcher-var-form">
         {formFields.map((field, idx) => (
-          <div key={field.key} className="launcher-var-field">
-            <label className="launcher-var-label">{field.label}</label>
+          <div key={field.key} className={`launcher-var-field ${validationErrors.has(field.key) ? "launcher-var-field-error" : ""}`}>
+            <label className="launcher-var-label">
+              {field.label}
+              {field.required && <span className="launcher-required-mark"> *</span>}
+            </label>
             {field.options && field.options.length > 0 && !field.allowFreeText ? (
               <select
                 ref={(el) => { formRefs.current[idx] = el as unknown as HTMLInputElement; }}
                 className="launcher-var-input"
                 value={formValues[field.key] ?? ""}
                 onChange={(e) =>
-                  setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  updateFormValue(field.key, e.target.value)
                 }
                 onFocus={() => setActiveFieldIndex(idx)}
               >
-                <option value="">{field.defaultValue ?? ""}</option>
+                <option value="">{t("launcher.inputPlaceholder")}</option>
                 {field.options.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
@@ -307,10 +365,10 @@ export default function Launcher() {
                   className="launcher-var-input"
                   value={formValues[field.key] ?? ""}
                   onChange={(e) =>
-                    setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                    updateFormValue(field.key, e.target.value)
                   }
                   onFocus={() => setActiveFieldIndex(idx)}
-                  placeholder={field.defaultValue ?? ""}
+                  placeholder={field.defaultValue || t("launcher.comboHint")}
                 />
                 <div className="launcher-option-list">
                   {field.options.map((opt) => (
@@ -320,7 +378,7 @@ export default function Launcher() {
                       className={`launcher-option-item ${formValues[field.key] === opt ? "selected" : ""}`}
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        setFormValues((prev) => ({ ...prev, [field.key]: opt }));
+                        updateFormValue(field.key, opt);
                       }}
                     >
                       {opt}
@@ -335,10 +393,10 @@ export default function Launcher() {
                 className="launcher-var-input"
                 value={formValues[field.key] ?? ""}
                 onChange={(e) =>
-                  setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                  updateFormValue(field.key, e.target.value)
                 }
                 onFocus={() => setActiveFieldIndex(idx)}
-                placeholder={field.defaultValue ?? ""}
+                placeholder={field.defaultValue || t("launcher.inputPlaceholder")}
               />
             )}
           </div>
@@ -346,7 +404,7 @@ export default function Launcher() {
       </div>
       <div className="launcher-var-actions">
         <button className="launcher-var-submit" onClick={submitVariables}>
-          確定 (Enter)
+          {t("launcher.submit")}
         </button>
       </div>
     </div>

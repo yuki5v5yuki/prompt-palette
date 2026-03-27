@@ -435,6 +435,14 @@ body {
   margin-bottom: 4px;
 }
 
+.form-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
 .form-input {
   width: 100%;
   padding: 8px 10px;

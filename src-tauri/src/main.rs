@@ -37,10 +37,16 @@ fn main() {
                 .item(&quit)
                 .build()?;
 
-            let tray_icon = app
-                .default_window_icon()
-                .cloned()
-                .expect("No default window icon set");
+            let icon_bytes = include_bytes!("../icons/icon.png");
+            let tray_icon = tauri::image::Image::from_bytes(icon_bytes)
+                .expect("Failed to load icon");
+
+            // Set window icon
+            if let Some(main_win) = app.get_webview_window("main") {
+                if let Ok(win_icon) = tauri::image::Image::from_bytes(icon_bytes) {
+                    let _ = main_win.set_icon(win_icon);
+                }
+            }
 
             let _tray = TrayIconBuilder::new()
                 .icon(tray_icon)

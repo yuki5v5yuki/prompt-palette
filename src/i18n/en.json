@@ -23,7 +23,7 @@
     "templates": "Templates",
     "categories": "Categories",
     "tags": "Tags",
-    "packages": "Variable Packages",
+    "packages": "Variables",
     "importExport": "Import / Export",
     "settings": "Settings"
   },
@@ -66,6 +66,11 @@
     "detectedVars": "Detected variables",
     "empty": "No variables defined. Add {{variable_name}} in the body to use variables.",
     "insertHint": "Click to insert into body",
+    "paletteHint": "Click to insert at cursor position in the body",
+    "selectPackageFirst": "Select variables above to show variable buttons here",
+    "builtinClipboard": "Replaced with clipboard content when pasting",
+    "builtinToday": "Replaced with today's date (e.g. 2026/03/26)",
+    "builtinNow": "Replaced with current date and time",
     "quickAdd": "Quick add variable",
     "preview": "Preview",
     "builtinVars": "Built-in variables",
@@ -73,7 +78,14 @@
     "detailSettings": "Variable Details",
     "detailSettingsHint": "Set default values and options",
     "addOption": "Add option",
-    "allowFreeText": "Allow free text input",
+    "allowFreeText": "Allow custom values besides the options",
+    "required": "Required",
+    "requiredHint": "Must be filled in when using the template",
+    "labelHint": "Name shown when using the template",
+    "defaultHint": "Value used when left empty",
+    "defaultHintWithOptions": "Value selected by default",
+    "noDefault": "None",
+    "optionsHint": "Choices shown as a dropdown when using the template",
     "placeholder": {
       "key": "e.g. customer_name",
       "label": "e.g. Customer Name",
@@ -82,18 +94,30 @@
     }
   },
   "variablePackage": {
-    "title": "Variable Package Management",
-    "packagesLabel": "Variable Packages",
-    "noPackagesHint": "No variable packages available",
-    "newPackage": "New Package",
-    "nameLabel": "Package Name",
+    "title": "Variable Management",
+    "packagesLabel": "Variables",
+    "selectHint": "Select variables to show variable buttons in the body area",
+    "noPackagesHint": "No variables available",
+    "noVariablesInPackage": "No settings for selected variable",
+    "newPackage": "New Variable",
+    "nameLabel": "Variable Name",
     "descriptionLabel": "Description",
     "placeholder": {
-      "name": "Enter package name",
-      "description": "Package description (optional)"
+      "name": "Enter variable name (e.g. Customer Name)",
+      "description": "Variable description (optional)"
     },
     "variableCount": "{{count}} variables",
-    "empty": "No variable packages yet."
+    "empty": "No variables yet.",
+    "emptyGuide": "Click + to add variables. Variables become input fields when using the template."
+  },
+  "launcher": {
+    "searchPlaceholder": "Search templates...",
+    "noResults": "No matching templates",
+    "submit": "Submit (Enter)",
+    "inputPlaceholder": "Enter a value",
+    "comboHint": "Select from options or type freely",
+    "requiredError": "Please fill in required fields",
+    "templatePreviewLabel": "Inserted at:"
   },
   "tag": {
     "title": "Tag Management",
@@ -124,7 +148,7 @@
     "previewTemplates": "Templates",
     "previewCategories": "Categories",
     "previewTags": "Tags",
-    "previewPackages": "Variable Packages",
+    "previewPackages": "Variables",
     "conflictStrategy": "Conflict resolution",
     "strategy": {
       "skip": "Skip",
@@ -137,7 +161,7 @@
     "resultTemplates": "Templates: {{count}}",
     "resultCategories": "Categories: {{count}}",
     "resultTags": "Tags: {{count}}",
-    "resultPackages": "Variable Packages: {{count}}",
+    "resultPackages": "Variables: {{count}}",
     "resultSkipped": "Skipped: {{count}}",
     "importAnother": "Import another file"
   },

@@ -137,6 +137,7 @@ pub struct Variable {
     pub options: Option<Vec<String>>,
     pub sort_order: i32,
     pub allow_free_text: bool,
+    pub required: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -149,6 +150,7 @@ pub struct CreateVariableInput {
     pub options: Option<Vec<String>>,
     pub sort_order: Option<i32>,
     pub allow_free_text: Option<bool>,
+    pub required: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -160,6 +162,7 @@ pub struct UpdateVariableInput {
     pub options: Option<Vec<String>>,
     pub sort_order: Option<i32>,
     pub allow_free_text: Option<bool>,
+    pub required: Option<bool>,
 }
 
 /// Request to interpolate a template with variable values
@@ -289,5 +292,6 @@ pub struct VariableFormField {
     pub options: Option<Vec<String>>,
     pub is_builtin: bool,
     pub allow_free_text: bool,
+    pub required: bool,
     pub variable_id: Option<String>,
 }

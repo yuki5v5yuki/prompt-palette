@@ -612,6 +612,7 @@ fn row_to_variable(row: &rusqlite::Row) -> rusqlite::Result<Variable> {
     let options: Option<Vec<String>> = options_json
         .and_then(|s| serde_json::from_str(&s).ok());
     let allow_free_text: i32 = row.get(7)?;
+    let required: i32 = row.get(8)?;
     Ok(Variable {
         id: row.get(0)?,
         package_id: row.get(1)?,
@@ -621,6 +622,7 @@ fn row_to_variable(row: &rusqlite::Row) -> rusqlite::Result<Variable> {
         options,
         sort_order: row.get(6)?,
         allow_free_text: allow_free_text != 0,
+        required: required != 0,
     })
 }
 
@@ -629,7 +631,7 @@ pub fn list_variables(app: AppHandle, package_id: String) -> Result<Vec<Variable
     let conn = db::open(&app)?;
     let mut stmt = conn
         .prepare(
-            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text
+            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text, required
              FROM variables
              WHERE package_id = ?1
              ORDER BY sort_order, key",
@@ -647,12 +649,13 @@ pub fn create_variable(app: AppHandle, input: CreateVariableInput) -> Result<Var
     let id = ulid::Ulid::new().to_string();
     let sort_order = input.sort_order.unwrap_or(0);
     let allow_free_text = input.allow_free_text.unwrap_or(true);
+    let required = input.required.unwrap_or(false);
     let options_json = input.options.as_ref().map(|o| serde_json::to_string(o).unwrap());
 
     conn.execute(
-        "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        rusqlite::params![id, input.package_id, input.key, input.label, input.default_value, options_json, sort_order, allow_free_text as i32],
+        "INSERT INTO variables (id, package_id, key, label, default_value, options, sort_order, allow_free_text, required)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        rusqlite::params![id, input.package_id, input.key, input.label, input.default_value, options_json, sort_order, allow_free_text as i32, required as i32],
     )
     .map_err(|e| e.to_string())?;
 
@@ -665,6 +668,7 @@ pub fn create_variable(app: AppHandle, input: CreateVariableInput) -> Result<Var
         options: input.options,
         sort_order,
         allow_free_text,
+        required,
     })
 }
 
@@ -673,7 +677,7 @@ pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -
     let conn = db::open(&app)?;
     let current: Variable = conn
         .query_row(
-            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text FROM variables WHERE id = ?1",
+            "SELECT id, package_id, key, label, default_value, options, sort_order, allow_free_text, required FROM variables WHERE id = ?1",
             [&id],
             row_to_variable,
         )
@@ -685,11 +689,12 @@ pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -
     let options = input.options.or(current.options);
     let sort_order = input.sort_order.unwrap_or(current.sort_order);
     let allow_free_text = input.allow_free_text.unwrap_or(current.allow_free_text);
+    let required = input.required.unwrap_or(current.required);
     let options_json = options.as_ref().map(|o| serde_json::to_string(o).unwrap());
 
     conn.execute(
-        "UPDATE variables SET key = ?1, label = ?2, default_value = ?3, options = ?4, sort_order = ?5, allow_free_text = ?6 WHERE id = ?7",
-        rusqlite::params![key, label, default_value, options_json, sort_order, allow_free_text as i32, id],
+        "UPDATE variables SET key = ?1, label = ?2, default_value = ?3, options = ?4, sort_order = ?5, allow_free_text = ?6, required = ?7 WHERE id = ?8",
+        rusqlite::params![key, label, default_value, options_json, sort_order, allow_free_text as i32, required as i32, id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -702,6 +707,7 @@ pub fn update_variable(app: AppHandle, id: String, input: UpdateVariableInput) -
         options,
         sort_order,
         allow_free_text,
+        required,
     })
 }
 
@@ -760,7 +766,7 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
     let variables = {
         let mut stmt = conn
             .prepare(
-                "SELECT v.id, v.package_id, v.key, v.label, v.default_value, v.options, v.sort_order, v.allow_free_text
+                "SELECT v.id, v.package_id, v.key, v.label, v.default_value, v.options, v.sort_order, v.allow_free_text, v.required
                  FROM variables v
                  INNER JOIN template_variable_packages tvp ON tvp.package_id = v.package_id
                  WHERE tvp.template_id = ?1
@@ -790,6 +796,7 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
                 options: var.options.clone(),
                 is_builtin: false,
                 allow_free_text: var.allow_free_text,
+                required: var.required,
                 variable_id: Some(var.id.clone()),
             });
         } else {
@@ -800,6 +807,7 @@ pub fn get_template_form_schema(app: AppHandle, template_id: String) -> Result<V
                 options: None,
                 is_builtin: false,
                 allow_free_text: true,
+                required: false,
                 variable_id: None,
             });
         }
