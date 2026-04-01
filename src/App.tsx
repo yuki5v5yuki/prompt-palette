@@ -6,6 +6,7 @@ import VariablePackageManager from "./components/VariablePackageManager";
 import ImportExport from "./components/ImportExport";
 import Settings from "./components/Settings";
 import Onboarding from "./components/Onboarding";
+import { ToastProvider } from "./components/Toast";
 import { isOnboarded, seedSampleData } from "./desktop";
 import "./styles.css";
 
@@ -56,16 +57,18 @@ function App() {
   }
 
   return (
-    <div className="app-layout">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="main-content">
-        {activeTab === "templates" && <TemplateList />}
-        {activeTab === "tags" && <TagManager />}
-        {activeTab === "packages" && <VariablePackageManager />}
-        {activeTab === "importExport" && <ImportExport />}
-        {activeTab === "settings" && <Settings />}
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="app-layout">
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="main-content">
+          {activeTab === "templates" && <TemplateList />}
+          {activeTab === "tags" && <TagManager />}
+          {activeTab === "packages" && <VariablePackageManager />}
+          {activeTab === "importExport" && <ImportExport />}
+          {activeTab === "settings" && <Settings />}
+        </main>
+      </div>
+    </ToastProvider>
   );
 }
 

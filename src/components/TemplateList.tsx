@@ -42,6 +42,7 @@ import {
   listTags,
 } from "../desktop";
 import TemplateEditor from "./TemplateEditor";
+import { useToast } from "./Toast";
 
 type SortMode = "default" | "frequency" | "recent" | "name";
 
@@ -286,6 +287,7 @@ function SortableTemplateItem({
 
 export default function TemplateList() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -373,13 +375,20 @@ export default function TemplateList() {
       });
     }
     resetCategoryForm();
+    showToast(t("toast.categorySaved"), "success");
     await reload();
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!window.confirm(t("common.confirmDelete"))) return;
+    // Show template count in confirmation
+    const catTemplates = templates.filter((tpl) => tpl.categoryId === id);
+    const message = catTemplates.length > 0
+      ? t("category.confirmDeleteWithCount", { count: catTemplates.length })
+      : t("common.confirmDelete");
+    if (!window.confirm(message)) return;
     await deleteCategory(id);
     if (editingCategoryId === id) resetCategoryForm();
+    showToast(t("toast.categoryDeleted"), "success");
     await reload();
   };
 
@@ -409,13 +418,38 @@ export default function TemplateList() {
   const selectedTemplate = templates.find((t) => t.id === selectedId) ?? null;
 
   const handleCreate = async (input: CreateTemplateInput) => {
-    await createTemplate(input);
+    const result = await createTemplate(input);
+    if (result) {
+      showToast(t("toast.templateCreated"), "success");
+    } else {
+      showToast(t("toast.saveFailed"), "error");
+    }
     setIsCreating(false);
     await reload();
   };
 
   const handleUpdate = async (id: string, input: UpdateTemplateInput) => {
-    await updateTemplate(id, input);
+    const result = await updateTemplate(id, input);
+    if (result) {
+      showToast(t("toast.templateSaved"), "success");
+    } else {
+      showToast(t("toast.saveFailed"), "error");
+    }
+    await reload();
+  };
+
+  const handleDuplicate = async (tpl: TemplateWithTags) => {
+    const input: CreateTemplateInput = {
+      title: `${tpl.title} (${t("template.copy")})`,
+      body: tpl.body,
+      categoryId: tpl.categoryId || undefined,
+      tagIds: tpl.tags.map((tag) => tag.id),
+    };
+    const result = await createTemplate(input);
+    if (result) {
+      showToast(t("toast.templateDuplicated"), "success");
+      setSelectedId(result.id);
+    }
     await reload();
   };
 
@@ -423,6 +457,7 @@ export default function TemplateList() {
     if (!window.confirm(t("common.confirmDelete"))) return;
     await deleteTemplate(id);
     setSelectedId(null);
+    showToast(t("toast.templateDeleted"), "success");
     await reload();
   };
 
@@ -902,6 +937,7 @@ export default function TemplateList() {
               handleUpdate(selectedTemplate.id, data as UpdateTemplateInput)
             }
             onDelete={() => handleDelete(selectedTemplate.id)}
+            onDuplicate={() => handleDuplicate(selectedTemplate)}
             onCancel={() => setSelectedId(null)}
           />
         ) : (

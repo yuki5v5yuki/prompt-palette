@@ -41,6 +41,8 @@
       "title": "Enter template name",
       "body": "Enter template body\nUse {{variable}} to embed variables"
     },
+    "duplicate": "Duplicate",
+    "copy": "Copy",
     "empty": "No templates yet. Click \"New Template\" to create one."
   },
   "category": {
@@ -53,7 +55,8 @@
     "placeholder": {
       "name": "Enter category name"
     },
-    "empty": "No categories yet."
+    "empty": "No categories yet.",
+    "confirmDeleteWithCount": "This category contains {{count}} templates. They will become uncategorized. Delete?"
   },
   "variable": {
     "title": "Variable Definitions",
@@ -116,9 +119,15 @@
     "submit": "Submit (Enter)",
     "inputPlaceholder": "Enter a value",
     "comboHint": "Select from options or type freely",
+    "comboSelectTab": "Options",
+    "comboFreeTab": "Free input",
+    "comboFreeHint": "Type freely",
     "requiredError": "Please fill in required fields",
-    "templatePreviewLabel": "Inserted at:",
-    "allCategories": "All"
+    "templatePreviewLabel": "Preview:",
+    "allCategories": "All",
+    "hintClose": "Close",
+    "hintNavigate": "Navigate",
+    "hintSelect": "Select"
   },
   "tag": {
     "title": "Tag Management",
@@ -173,6 +182,16 @@
     "step3": "Search, select, and auto-paste",
     "loadSamples": "Load sample templates",
     "skip": "Skip and start"
+  },
+  "toast": {
+    "templateCreated": "Template created",
+    "templateSaved": "Template saved",
+    "templateDeleted": "Template deleted",
+    "templateDuplicated": "Template duplicated",
+    "categorySaved": "Category saved",
+    "categoryDeleted": "Category deleted",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete"
   },
   "settings": {
     "title": "Settings",

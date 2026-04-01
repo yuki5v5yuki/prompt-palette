@@ -41,6 +41,8 @@
       "title": "テンプレート名を入力",
       "body": "テンプレート本文を入力\n{{変数名}} で変数を埋め込めます"
     },
+    "duplicate": "複製",
+    "copy": "コピー",
     "empty": "テンプレートがありません。「新規テンプレート」から作成してください。"
   },
   "category": {
@@ -53,7 +55,8 @@
     "placeholder": {
       "name": "カテゴリ名を入力"
     },
-    "empty": "カテゴリがありません。"
+    "empty": "カテゴリがありません。",
+    "confirmDeleteWithCount": "このカテゴリには{{count}}件のテンプレートがあります。削除すると未分類になります。削除しますか？"
   },
   "variable": {
     "title": "変数定義",
@@ -116,9 +119,15 @@
     "submit": "確定 (Enter)",
     "inputPlaceholder": "入力してください",
     "comboHint": "候補から選択、または自由に入力",
+    "comboSelectTab": "選択肢",
+    "comboFreeTab": "自由入力",
+    "comboFreeHint": "自由に入力してください",
     "requiredError": "必須項目を入力してください",
-    "templatePreviewLabel": "挿入される位置：",
-    "allCategories": "すべて"
+    "templatePreviewLabel": "プレビュー：",
+    "allCategories": "すべて",
+    "hintClose": "閉じる",
+    "hintNavigate": "選択",
+    "hintSelect": "決定"
   },
   "tag": {
     "title": "タグ管理",
@@ -173,6 +182,16 @@
     "step3": "検索・選択して自動ペースト",
     "loadSamples": "サンプルテンプレートを読み込む",
     "skip": "スキップして始める"
+  },
+  "toast": {
+    "templateCreated": "テンプレートを作成しました",
+    "templateSaved": "テンプレートを保存しました",
+    "templateDeleted": "テンプレートを削除しました",
+    "templateDuplicated": "テンプレートを複製しました",
+    "categorySaved": "カテゴリを保存しました",
+    "categoryDeleted": "カテゴリを削除しました",
+    "saveFailed": "保存に失敗しました",
+    "deleteFailed": "削除に失敗しました"
   },
   "settings": {
     "title": "設定",

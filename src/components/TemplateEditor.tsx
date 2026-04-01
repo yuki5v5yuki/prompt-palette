@@ -10,6 +10,7 @@ interface TemplateEditorProps {
   tags: Tag[];
   onSave: (data: CreateTemplateInput | UpdateTemplateInput) => void;
   onDelete?: () => void;
+  onDuplicate?: () => void;
   onCancel: () => void;
 }
 
@@ -25,6 +26,7 @@ export default function TemplateEditor({
   tags,
   onSave,
   onDelete,
+  onDuplicate,
   onCancel,
 }: TemplateEditorProps) {
   const { t } = useTranslation();
@@ -150,6 +152,11 @@ export default function TemplateEditor({
       <div className="editor-header">
         <h3>{isEditing ? t("common.edit") : t("template.newTemplate")}</h3>
         <div className="editor-actions">
+          {isEditing && onDuplicate && (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onDuplicate}>
+              {t("template.duplicate")}
+            </button>
+          )}
           {isEditing && onDelete && (
             <button type="button" className="btn btn-danger btn-sm" onClick={onDelete}>
               {t("common.delete")}

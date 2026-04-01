@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import Fuse from "fuse.js";
 import type { TemplateWithTags, VariableFormField, Category } from "../types";
 import { ICON_MAP, CategoryIcon } from "./CategoryIcon";
@@ -20,16 +21,32 @@ const fuseOptions = {
   ],
   threshold: 0.4,
   includeScore: true,
+  includeMatches: true,
 };
+
+// Highlight matched ranges in a string
+function highlightMatches(text: string, indices: readonly [number, number][] | undefined) {
+  if (!indices || indices.length === 0) return text;
+  const result: (string | JSX.Element)[] = [];
+  let lastEnd = 0;
+  for (const [start, end] of indices) {
+    if (start > lastEnd) result.push(text.slice(lastEnd, start));
+    result.push(<mark key={start} className="search-highlight">{text.slice(start, end + 1)}</mark>);
+    lastEnd = end + 1;
+  }
+  if (lastEnd < text.length) result.push(text.slice(lastEnd));
+  return result;
+}
 
 type LauncherStep = "search" | "variables";
 
 export default function Launcher() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState<LauncherStep>("search");
   const [query, setQuery] = useState("");
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
   const [results, setResults] = useState<TemplateWithTags[]>([]);
+  const [matchMap, setMatchMap] = useState<Map<string, Fuse.FuseResultMatch[]>>(new Map());
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -45,6 +62,7 @@ export default function Launcher() {
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [activeFieldIndex, setActiveFieldIndex] = useState(0);
   const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
+  const [comboFreeText, setComboFreeText] = useState<Record<string, boolean>>({});
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadTemplates = useCallback(async () => {
@@ -66,15 +84,29 @@ export default function Launcher() {
     inputRef.current?.focus();
   }, [loadTemplates]);
 
+  // Listen for language changes from main window
+  useEffect(() => {
+    const unlisten = listen<string>("language-changed", (event) => {
+      i18n.changeLanguage(event.payload);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [i18n]);
+
   useEffect(() => {
     if (!query.trim()) {
       setResults(templates);
+      setMatchMap(new Map());
       setSelectedIndex(0);
       return;
     }
     if (fuseRef.current) {
       const fuseResults = fuseRef.current.search(query);
       setResults(fuseResults.map((r) => r.item));
+      const newMatchMap = new Map<string, Fuse.FuseResultMatch[]>();
+      for (const r of fuseResults) {
+        if (r.matches) newMatchMap.set(r.item.id, r.matches as Fuse.FuseResultMatch[]);
+      }
+      setMatchMap(newMatchMap);
       setSelectedIndex(0);
     }
   }, [query, templates]);
@@ -178,6 +210,7 @@ export default function Launcher() {
           initial[f.key] = f.defaultValue ?? "";
         }
         setFormValues(initial);
+        setComboFreeText({});
         setActiveFieldIndex(0);
         setStep("variables");
       } else {
@@ -338,7 +371,13 @@ export default function Launcher() {
               onClick={() => selectTemplate(tpl)}
               onMouseEnter={() => setSelectedIndex(index)}
             >
-              <div className="launcher-item-title">{tpl.title}</div>
+              <div className="launcher-item-title">
+                {(() => {
+                  const matches = matchMap.get(tpl.id);
+                  const titleMatch = matches?.find((m) => m.key === "title");
+                  return titleMatch ? highlightMatches(tpl.title, titleMatch.indices as unknown as [number, number][]) : tpl.title;
+                })()}
+              </div>
               {tpl.tags.length > 0 && (
                 <div className="launcher-item-tags">
                   {tpl.tags.map((tag) => (
@@ -347,10 +386,27 @@ export default function Launcher() {
                 </div>
               )}
               <div className="launcher-item-preview">
-                {tpl.body.slice(0, 100)}{tpl.body.length > 100 ? "..." : ""}
+                {(() => {
+                  const preview = tpl.body.slice(0, 100) + (tpl.body.length > 100 ? "..." : "");
+                  const matches = matchMap.get(tpl.id);
+                  const bodyMatch = matches?.find((m) => m.key === "body");
+                  if (bodyMatch) {
+                    // Only highlight indices within the preview range
+                    const clampedIndices = (bodyMatch.indices as unknown as [number, number][])
+                      .filter(([s]) => s < 100)
+                      .map(([s, e]) => [s, Math.min(e, 99)] as [number, number]);
+                    return highlightMatches(preview, clampedIndices);
+                  }
+                  return preview;
+                })()}
               </div>
             </div>
           ))}
+        </div>
+        <div className="launcher-hints">
+          <span className="launcher-hint-item"><kbd>Esc</kbd> {t("launcher.hintClose")}</span>
+          <span className="launcher-hint-item"><kbd>&uarr;&darr;</kbd> {t("launcher.hintNavigate")}</span>
+          <span className="launcher-hint-item"><kbd>Enter</kbd> {t("launcher.hintSelect")}</span>
         </div>
       </div>
     );
@@ -358,16 +414,26 @@ export default function Launcher() {
 
   // --- Variable Input Step ---
 
-  // Build a short preview showing where variables appear in the body
+  // Build a live preview showing where variables appear in the body
   const buildBodyPreview = () => {
     if (!selectedTemplate) return null;
     const body = selectedTemplate.body;
-    // Truncate to ~120 chars and highlight {{variables}}
-    const truncated = body.length > 120 ? body.slice(0, 120) + "..." : body;
-    const parts = truncated.split(/(\{\{[^}]+\}\})/g);
+    const parts = body.split(/(\{\{[^}]+\}\})/g);
+    const activeKey = formFields[activeFieldIndex]?.key;
+
     return parts.map((part, i) => {
-      if (/^\{\{[^}]+\}\}$/.test(part)) {
-        return <span key={i} className="launcher-preview-var">{part}</span>;
+      const match = part.match(/^\{\{([^}|]+)(?:\|[^}]+)?\}\}$/);
+      if (match) {
+        const key = match[1];
+        const value = formValues[key];
+        const isActive = key === activeKey;
+        const isFilled = !!value;
+        const classes = [
+          "launcher-preview-var",
+          isFilled && "filled",
+          isActive && "active",
+        ].filter(Boolean).join(" ");
+        return <span key={i} className={classes}>{isFilled ? value : part}</span>;
       }
       return <span key={i}>{part}</span>;
     });
@@ -411,32 +477,61 @@ export default function Launcher() {
               </select>
             ) : field.options && field.options.length > 0 ? (
               <div className="combobox-wrapper">
-                <input
-                  ref={(el) => { formRefs.current[idx] = el; }}
-                  type="text"
-                  className="launcher-var-input"
-                  value={formValues[field.key] ?? ""}
-                  onChange={(e) =>
-                    updateFormValue(field.key, e.target.value)
-                  }
-                  onFocus={() => setActiveFieldIndex(idx)}
-                  placeholder={field.defaultValue || t("launcher.comboHint")}
-                />
-                <div className="launcher-option-list">
-                  {field.options.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      className={`launcher-option-item ${formValues[field.key] === opt ? "selected" : ""}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        updateFormValue(field.key, opt);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                <div className="combobox-tabs">
+                  <button
+                    type="button"
+                    className={`combobox-tab ${!comboFreeText[field.key] ? "active" : ""}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setComboFreeText((prev) => ({ ...prev, [field.key]: false }));
+                    }}
+                  >
+                    {t("launcher.comboSelectTab")}
+                  </button>
+                  <button
+                    type="button"
+                    className={`combobox-tab ${comboFreeText[field.key] ? "active" : ""}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setComboFreeText((prev) => ({ ...prev, [field.key]: true }));
+                      updateFormValue(field.key, "");
+                      setTimeout(() => formRefs.current[idx]?.focus(), 0);
+                    }}
+                  >
+                    {t("launcher.comboFreeTab")}
+                  </button>
                 </div>
+                {comboFreeText[field.key] ? (
+                  <input
+                    ref={(el) => { formRefs.current[idx] = el; }}
+                    type="text"
+                    className="launcher-var-input"
+                    value={formValues[field.key] ?? ""}
+                    onChange={(e) =>
+                      updateFormValue(field.key, e.target.value)
+                    }
+                    onFocus={() => setActiveFieldIndex(idx)}
+                    placeholder={t("launcher.comboFreeHint")}
+                  />
+                ) : (
+                  <div className="launcher-option-list">
+                    {field.options.map((opt) => (
+                      <button
+                        ref={idx === 0 && opt === field.options![0] ? (el) => { formRefs.current[idx] = el as unknown as HTMLInputElement; } : undefined}
+                        key={opt}
+                        type="button"
+                        className={`launcher-option-item ${formValues[field.key] === opt ? "selected" : ""}`}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          updateFormValue(field.key, opt);
+                        }}
+                        onFocus={() => setActiveFieldIndex(idx)}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <input
