@@ -34,6 +34,7 @@
     "bodyLabel": "本文",
     "categoryLabel": "カテゴリ",
     "tagsLabel": "タグ",
+    "tagSearch": "タグを検索...",
     "noCategory": "なし",
     "useCount": "使用回数",
     "lastUsed": "最終使用",

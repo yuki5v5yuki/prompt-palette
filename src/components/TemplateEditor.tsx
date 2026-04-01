@@ -45,6 +45,7 @@ export default function TemplateEditor({
   const [allVariables, setAllVariables] = useState<Variable[]>([]);
   const [showAllVars, setShowAllVars] = useState(false);
   const [varSearch, setVarSearch] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -204,17 +205,34 @@ export default function TemplateEditor({
       {tags.length > 0 && (
         <div className="form-group">
           <label className="form-label">{t("template.tagsLabel")}</label>
+          <input
+              type="text"
+              className="form-input tag-search-input"
+              placeholder={t("template.tagSearch")}
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+            />
           <div className="tag-selector">
-            {tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
-                onClick={() => toggleTag(tag.id)}
-              >
-                {tag.name}
-              </button>
-            ))}
+            {tags
+              .filter((tag) => {
+                if (!tagFilter) return true;
+                return tag.name.toLowerCase().includes(tagFilter.toLowerCase()) || selectedTagIds.has(tag.id);
+              })
+              .sort((a, b) => {
+                const aSelected = selectedTagIds.has(a.id) ? 0 : 1;
+                const bSelected = selectedTagIds.has(b.id) ? 0 : 1;
+                return aSelected - bSelected;
+              })
+              .map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
+                  onClick={() => toggleTag(tag.id)}
+                >
+                  {tag.name}
+                </button>
+              ))}
           </div>
         </div>
       )}

@@ -596,6 +596,12 @@ body {
 
 /* ─── Tag Selector ─── */
 
+.tag-search-input {
+  margin-bottom: 8px;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
 .tag-selector {
   display: flex;
   gap: 6px;
