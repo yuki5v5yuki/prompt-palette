@@ -546,6 +546,35 @@ export default function TemplateEditor({
                 />
 
                 <div className="variable-palette-scroll">
+                  {/* Built-in variables first — flat row (no extra toggle) */}
+                  {(() => {
+                    const filteredBuiltins = BUILTIN_VARS.filter(
+                      (bv) => !varSearch || bv.key.toLowerCase().includes(varSearch.toLowerCase())
+                    );
+                    if (filteredBuiltins.length === 0) return null;
+                    return (
+                      <div className="variable-palette-builtin">
+                        <span className="variable-palette-section-label">{t("variable.builtinGroup")}</span>
+                        <div className="variable-palette-row">
+                          {filteredBuiltins.map((bv) => {
+                            const isUsed = bodyTokens.includes(bv.key);
+                            return (
+                              <button
+                                key={bv.key}
+                                type="button"
+                                className={`variable-chip variable-chip-builtin variable-chip-insert ${isUsed ? "variable-chip-in-body" : ""} ${insertedChipKey === bv.key ? "variable-chip-inserted" : ""}`}
+                                onClick={(e) => insertVariable(bv.key, e.currentTarget)}
+                                title={t(bv.tooltipKey)}
+                              >
+                                {isUsed ? "✓" : "+"} {bv.key}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Group by package */}
                   {(() => {
                     const filtered = allVariables.filter(
@@ -558,6 +587,25 @@ export default function TemplateEditor({
                         .map((pkg) => {
                           const pkgVars = filtered.filter((v) => v.packageId === pkg.id);
                           if (pkgVars.length === 0) return null;
+
+                          // 1 件だけのパッケージはトグルなし（親名と子が同じ冗長を避ける）
+                          if (pkgVars.length === 1) {
+                            const v = pkgVars[0];
+                            const isUsed = bodyTokens.includes(v.key);
+                            return (
+                              <div key={pkg.id} className="variable-palette-row">
+                                <button
+                                  type="button"
+                                  className={`variable-chip variable-chip-insert ${isUsed ? "variable-chip-in-body" : ""} ${insertedChipKey === v.key ? "variable-chip-inserted" : ""}`}
+                                  onClick={(e) => insertVariable(v.key, e.currentTarget)}
+                                  title={t("variable.insertHint")}
+                                >
+                                  {isUsed ? "✓" : "+"} {v.label}
+                                </button>
+                              </div>
+                            );
+                          }
+
                           const isCollapsed = collapsedGroups.has(pkg.id);
                           return (
                             <div key={pkg.id} className="variable-group">
@@ -618,53 +666,6 @@ export default function TemplateEditor({
                             </button>
                           );
                         })}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Built-in variables group */}
-                  {(() => {
-                    const filteredBuiltins = BUILTIN_VARS.filter(
-                      (bv) => !varSearch || bv.key.toLowerCase().includes(varSearch.toLowerCase())
-                    );
-                    if (filteredBuiltins.length === 0) return null;
-                    const isCollapsed = collapsedGroups.has("__builtin__");
-                    return (
-                      <div className="variable-group">
-                        <button
-                          type="button"
-                          className="variable-group-toggle"
-                          onClick={() => {
-                            setCollapsedGroups((prev) => {
-                              const next = new Set(prev);
-                              if (next.has("__builtin__")) next.delete("__builtin__");
-                              else next.add("__builtin__");
-                              return next;
-                            });
-                          }}
-                        >
-                          {isCollapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
-                          {t("variable.builtinGroup")}
-                          <span className="variable-group-count">({filteredBuiltins.length})</span>
-                        </button>
-                        {!isCollapsed && (
-                          <div className="variable-palette-row">
-                            {filteredBuiltins.map((bv) => {
-                              const isUsed = bodyTokens.includes(bv.key);
-                              return (
-                                <button
-                                  key={bv.key}
-                                  type="button"
-                                  className={`variable-chip variable-chip-builtin variable-chip-insert ${isUsed ? "variable-chip-in-body" : ""} ${insertedChipKey === bv.key ? "variable-chip-inserted" : ""}`}
-                                  onClick={(e) => insertVariable(bv.key, e.currentTarget)}
-                                  title={t(bv.tooltipKey)}
-                                >
-                                  {isUsed ? "✓" : "+"} {bv.key}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
                     );
                   })()}

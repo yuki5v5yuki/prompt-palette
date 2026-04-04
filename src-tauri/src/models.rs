@@ -37,6 +37,7 @@ pub struct UpdateCategoryInput {
 pub struct Tag {
     pub id: String,
     pub name: String,
+    pub sort_order: i32,
 }
 
 #[derive(Debug, Deserialize)]

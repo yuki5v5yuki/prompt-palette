@@ -2,7 +2,14 @@ use rusqlite::Connection;
 
 /// All migrations in order. Each function upgrades from version N-1 to N.
 pub fn get_migrations() -> Vec<fn(&Connection) -> rusqlite::Result<()>> {
-    vec![migrate_v1, migrate_v2, migrate_v3, migrate_v4, migrate_v5]
+    vec![
+        migrate_v1,
+        migrate_v2,
+        migrate_v3,
+        migrate_v4,
+        migrate_v5,
+        migrate_v6,
+    ]
 }
 
 /// V1: Initial schema — 5 data tables + schema_version
@@ -167,5 +174,12 @@ fn migrate_v4(conn: &Connection) -> rusqlite::Result<()> {
 fn migrate_v5(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute_batch(
         "ALTER TABLE variables ADD COLUMN required INTEGER NOT NULL DEFAULT 0;",
+    )
+}
+
+/// V6: Tag display order (drag-and-drop in tag manager)
+fn migrate_v6(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute_batch(
+        "ALTER TABLE tags ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;",
     )
 }

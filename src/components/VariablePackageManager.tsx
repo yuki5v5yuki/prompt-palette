@@ -1,5 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { VariablePackage, Variable } from "../types";
 import {
@@ -17,6 +32,223 @@ import { useToast } from "./Toast";
 interface PackageWithVar {
   pkg: VariablePackage;
   variable: Variable | null;
+}
+
+function SortableVariablePackageItem({
+  item,
+  editingId,
+  editName,
+  editDefault,
+  editOptions,
+  editAllowFreeText,
+  editRequired,
+  setEditName,
+  setEditDefault,
+  setEditOptions,
+  setEditAllowFreeText,
+  setEditRequired,
+  startEdit,
+  resetEdit,
+  handleSaveEdit,
+  handleDelete,
+  t,
+}: {
+  item: PackageWithVar;
+  editingId: string | null;
+  editName: string;
+  editDefault: string;
+  editOptions: string[];
+  editAllowFreeText: boolean;
+  editRequired: boolean;
+  setEditName: (v: string) => void;
+  setEditDefault: (v: string) => void;
+  setEditOptions: (v: string[]) => void;
+  setEditAllowFreeText: (v: boolean) => void;
+  setEditRequired: (v: boolean) => void;
+  startEdit: (item: PackageWithVar) => void;
+  resetEdit: () => void;
+  handleSaveEdit: () => void;
+  handleDelete: (id: string) => void;
+  t: (key: string) => string;
+}) {
+  const isEditing = editingId === item.pkg.id;
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: item.pkg.id,
+    disabled: isEditing,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`package-item${isDragging ? " dragging" : ""}`}
+    >
+      <div className="item-row">
+        <div className="item-row-main">
+          <span
+            className="drag-handle"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            title={t("variablePackage.dragHandleTitle")}
+            aria-label={t("variablePackage.dragHandleTitle")}
+          >
+            ⠿
+          </span>
+          <div
+            className="item-info"
+            onClick={() => (isEditing ? resetEdit() : startEdit(item))}
+            style={{ cursor: "pointer", flex: 1, minWidth: 0 }}
+          >
+            <span className="variable-chip variable-chip-static">{item.pkg.name}</span>
+            {item.variable?.defaultValue && (
+              <span className="variable-card-meta">
+                {t("variable.default")}: {item.variable.defaultValue}
+              </span>
+            )}
+            {item.variable?.options && item.variable.options.length > 0 && (
+              <span className="variable-card-meta">
+                {t("variable.options")}: {item.variable.options.join(", ")}
+              </span>
+            )}
+            <span className="variable-card-toggle">
+              {isEditing ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+          </div>
+        </div>
+        <div className="item-actions">
+          <button
+            className="btn btn-ghost btn-xs btn-danger-text"
+            onClick={() => handleDelete(item.pkg.id)}
+          >
+            {t("common.delete")}
+          </button>
+        </div>
+      </div>
+
+      {isEditing && (
+        <div className="variable-card-body">
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">{t("variablePackage.nameLabel")}</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder={t("variablePackage.placeholder.name")}
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">{t("variable.optionsLabel")}</label>
+            <p className="form-hint">{t("variable.optionsHint")}</p>
+            <div className="option-list">
+              {editOptions.map((opt, idx) => (
+                <div key={idx} className="option-item">
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={opt}
+                    onChange={(e) => {
+                      const next = [...editOptions];
+                      next[idx] = e.target.value;
+                      setEditOptions(next);
+                    }}
+                    placeholder={`${t("variable.optionsLabel")} ${idx + 1}`}
+                  />
+                  <button
+                    type="button"
+                    className="btn-icon btn-icon-danger"
+                    onClick={() => {
+                      const removed = editOptions[idx];
+                      const next = editOptions.filter((_, i) => i !== idx);
+                      setEditOptions(next);
+                      if (editDefault === removed.trim()) {
+                        setEditDefault("");
+                      }
+                    }}
+                    title={t("common.delete")}
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="option-add-btn"
+                onClick={() => setEditOptions([...editOptions, ""])}
+              >
+                + {t("variable.addOption")}
+              </button>
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group form-group-half">
+              <label className="form-label">{t("variable.defaultLabel")}</label>
+              <p className="form-hint">{t("variable.defaultHintWithOptions")}</p>
+              <select
+                className="form-select"
+                value={editDefault}
+                onChange={(e) => setEditDefault(e.target.value)}
+              >
+                <option value="">{t("variable.noDefault")}</option>
+                {editOptions
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+                  .map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+          <label className="option-freetext-check">
+            <input
+              type="checkbox"
+              checked={editAllowFreeText}
+              onChange={(e) => setEditAllowFreeText(e.target.checked)}
+            />
+            {t("variable.allowFreeText")}
+          </label>
+          <label className="option-freetext-check">
+            <input
+              type="checkbox"
+              checked={editRequired}
+              onChange={(e) => setEditRequired(e.target.checked)}
+            />
+            {t("variable.required")}
+          </label>
+          <div className="variable-card-actions">
+            <button type="button" className="btn btn-secondary btn-xs" onClick={resetEdit}>
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-xs"
+              onClick={handleSaveEdit}
+              style={{ marginLeft: 6 }}
+            >
+              {t("common.save")}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function VariablePackageManager() {
@@ -131,6 +363,34 @@ export default function VariablePackageManager() {
     setEditAllowFreeText(true);
     setEditRequired(false);
   };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handlePackageDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const oldIndex = items.findIndex((i) => i.pkg.id === activeId);
+      const newIndex = items.findIndex((i) => i.pkg.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      setItems(reordered);
+
+      const results = await Promise.all(
+        reordered.map((it, i) => updateVariablePackage(it.pkg.id, { sortOrder: i }))
+      );
+      if (results.some((r) => !r.ok)) {
+        showToast(t("toast.saveFailed"), "error");
+        await reload();
+      }
+    },
+    [items, reload, showToast, t]
+  );
 
   const handleSaveEdit = async () => {
     if (!editingId || !editName.trim()) return;
@@ -311,142 +571,39 @@ export default function VariablePackageManager() {
         {items.length === 0 && !isCreating && (
           <p className="empty-message">{t("variablePackage.emptyGuide")}</p>
         )}
-        {items.map((item) => (
-          <div key={item.pkg.id} className="package-item">
-            {/* Header row */}
-            <div className="item-row">
-              <div
-                className="item-info"
-                onClick={() => editingId === item.pkg.id ? resetEdit() : startEdit(item)}
-                style={{ cursor: "pointer" }}
-              >
-                <span className="variable-chip variable-chip-static">{item.pkg.name}</span>
-                {item.variable?.defaultValue && (
-                  <span className="variable-card-meta">
-                    {t("variable.default")}: {item.variable.defaultValue}
-                  </span>
-                )}
-                {item.variable?.options && item.variable.options.length > 0 && (
-                  <span className="variable-card-meta">
-                    {t("variable.options")}: {item.variable.options.join(", ")}
-                  </span>
-                )}
-                <span className="variable-card-toggle">{editingId === item.pkg.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</span>
-              </div>
-              <div className="item-actions">
-                <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => handleDelete(item.pkg.id)}>
-                  {t("common.delete")}
-                </button>
-              </div>
-            </div>
-
-            {/* Inline edit form */}
-            {editingId === item.pkg.id && (
-              <div className="variable-card-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">{t("variablePackage.nameLabel")}</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder={t("variablePackage.placeholder.name")}
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">{t("variable.optionsLabel")}</label>
-                  <p className="form-hint">{t("variable.optionsHint")}</p>
-                  <div className="option-list">
-                    {editOptions.map((opt, idx) => (
-                      <div key={idx} className="option-item">
-                        <input
-                          type="text"
-                          className="form-input"
-                          value={opt}
-                          onChange={(e) => {
-                            const next = [...editOptions];
-                            next[idx] = e.target.value;
-                            setEditOptions(next);
-                          }}
-                          placeholder={`${t("variable.optionsLabel")} ${idx + 1}`}
-                        />
-                        <button
-                          type="button"
-                          className="btn-icon btn-icon-danger"
-                          onClick={() => {
-                            const removed = editOptions[idx];
-                            const next = editOptions.filter((_, i) => i !== idx);
-                            setEditOptions(next);
-                            // Clear default if it was the removed option
-                            if (editDefault === removed.trim()) {
-                              setEditDefault("");
-                            }
-                          }}
-                          title={t("common.delete")}
-                        >
-                          x
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      className="option-add-btn"
-                      onClick={() => setEditOptions([...editOptions, ""])}
-                    >
-                      + {t("variable.addOption")}
-                    </button>
-                  </div>
-                </div>
-                {/* Default value — always a dropdown from options */}
-                <div className="form-row">
-                  <div className="form-group form-group-half">
-                    <label className="form-label">{t("variable.defaultLabel")}</label>
-                    <p className="form-hint">{t("variable.defaultHintWithOptions")}</p>
-                    <select
-                      className="form-select"
-                      value={editDefault}
-                      onChange={(e) => setEditDefault(e.target.value)}
-                    >
-                      <option value="">{t("variable.noDefault")}</option>
-                      {editOptions
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                        .map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                  </div>
-                </div>
-                <label className="option-freetext-check">
-                  <input
-                    type="checkbox"
-                    checked={editAllowFreeText}
-                    onChange={(e) => setEditAllowFreeText(e.target.checked)}
-                  />
-                  {t("variable.allowFreeText")}
-                </label>
-                <label className="option-freetext-check">
-                  <input
-                    type="checkbox"
-                    checked={editRequired}
-                    onChange={(e) => setEditRequired(e.target.checked)}
-                  />
-                  {t("variable.required")}
-                </label>
-                <div className="variable-card-actions">
-                  <button type="button" className="btn btn-secondary btn-xs" onClick={resetEdit}>
-                    {t("common.cancel")}
-                  </button>
-                  <button type="button" className="btn btn-primary btn-xs" onClick={handleSaveEdit} style={{ marginLeft: 6 }}>
-                    {t("common.save")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handlePackageDragEnd}
+        >
+          <SortableContext
+            items={items.map((i) => i.pkg.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {items.map((item) => (
+              <SortableVariablePackageItem
+                key={item.pkg.id}
+                item={item}
+                editingId={editingId}
+                editName={editName}
+                editDefault={editDefault}
+                editOptions={editOptions}
+                editAllowFreeText={editAllowFreeText}
+                editRequired={editRequired}
+                setEditName={setEditName}
+                setEditDefault={setEditDefault}
+                setEditOptions={setEditOptions}
+                setEditAllowFreeText={setEditAllowFreeText}
+                setEditRequired={setEditRequired}
+                startEdit={startEdit}
+                resetEdit={resetEdit}
+                handleSaveEdit={handleSaveEdit}
+                handleDelete={handleDelete}
+                t={t}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   );

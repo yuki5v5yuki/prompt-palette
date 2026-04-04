@@ -121,7 +121,8 @@
     },
     "variableCount": "{{count}} variables",
     "empty": "No variables yet.",
-    "emptyGuide": "Click + to add variables. Variables become input fields when using the template."
+    "emptyGuide": "Click + to add variables. Variables become input fields when using the template.",
+    "dragHandleTitle": "Drag to reorder"
   },
   "launcher": {
     "searchPlaceholder": "Search templates...",
@@ -146,6 +147,7 @@
     "title": "Tag Management",
     "newTag": "New Tag",
     "nameLabel": "Tag Name",
+    "dragHandleTitle": "Drag to reorder",
     "placeholder": {
       "name": "Enter tag name"
     },

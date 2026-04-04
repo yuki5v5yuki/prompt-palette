@@ -719,6 +719,14 @@ body {
   transition: background 0.15s;
 }
 
+.item-row-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
 .item-row:hover {
   background: var(--bg-secondary);
 }
@@ -1113,6 +1121,12 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 6px);
   background: var(--bg-secondary);
+}
+
+.variable-palette-builtin {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .variable-palette-scroll {
@@ -1755,13 +1769,15 @@ body {
   font-size: 11px;
   padding: 2px;
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 0.58;
   transition: opacity 0.15s;
 }
 
 .category-header:hover .drag-handle,
-.template-item:hover .drag-handle {
-  opacity: 0.6;
+.template-item:hover .drag-handle,
+.package-item:hover .drag-handle,
+.item-row:hover .drag-handle {
+  opacity: 0.85;
 }
 
 .drag-handle:hover {

@@ -135,6 +135,7 @@ fn main() {
             commands::list_tags,
             commands::create_tag,
             commands::delete_tag,
+            commands::reorder_tags,
             // Variable Packages
             commands::list_variable_packages,
             commands::create_variable_package,

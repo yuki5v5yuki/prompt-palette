@@ -54,7 +54,7 @@ pub fn seed_sample_data(app: AppHandle) -> Result<(), String> {
     // Sample tag
     let tag_id = ulid::Ulid::new().to_string();
     conn.execute(
-        "INSERT INTO tags (id, name) VALUES (?1, ?2)",
+        "INSERT INTO tags (id, name, sort_order) VALUES (?1, ?2, 0)",
         rusqlite::params![tag_id, "sample"],
     ).map_err(|e| e.to_string())?;
 
@@ -199,17 +199,27 @@ pub fn delete_category(app: AppHandle, id: String) -> Result<(), String> {
 
 // ─── Tags ───
 
+fn next_tag_sort_order(conn: &rusqlite::Connection) -> Result<i32, String> {
+    conn.query_row(
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tags",
+        [],
+        |row| row.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub fn list_tags(app: AppHandle) -> Result<Vec<Tag>, String> {
     let conn = db::open(&app)?;
     let mut stmt = conn
-        .prepare("SELECT id, name FROM tags ORDER BY name")
+        .prepare("SELECT id, name, sort_order FROM tags ORDER BY sort_order, name")
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([], |row| {
             Ok(Tag {
                 id: row.get(0)?,
                 name: row.get(1)?,
+                sort_order: row.get(2)?,
             })
         })
         .map_err(|e| e.to_string())?;
@@ -220,12 +230,32 @@ pub fn list_tags(app: AppHandle) -> Result<Vec<Tag>, String> {
 pub fn create_tag(app: AppHandle, input: CreateTagInput) -> Result<Tag, String> {
     let conn = db::open(&app)?;
     let id = ulid::Ulid::new().to_string();
+    let sort_order = next_tag_sort_order(&conn)?;
     conn.execute(
-        "INSERT INTO tags (id, name) VALUES (?1, ?2)",
-        rusqlite::params![id, input.name],
+        "INSERT INTO tags (id, name, sort_order) VALUES (?1, ?2, ?3)",
+        rusqlite::params![id, input.name, sort_order],
     )
     .map_err(|e| e.to_string())?;
-    Ok(Tag { id, name: input.name })
+    Ok(Tag {
+        id,
+        name: input.name,
+        sort_order,
+    })
+}
+
+#[tauri::command]
+pub fn reorder_tags(app: AppHandle, tag_ids: Vec<String>) -> Result<(), String> {
+    let mut conn = db::open(&app)?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+    for (i, id) in tag_ids.iter().enumerate() {
+        tx.execute(
+            "UPDATE tags SET sort_order = ?1 WHERE id = ?2",
+            rusqlite::params![i as i32, id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -338,10 +368,10 @@ pub fn delete_variable_package(app: AppHandle, id: String) -> Result<(), String>
 fn get_tags_for_template(conn: &rusqlite::Connection, template_id: &str) -> Result<Vec<Tag>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT t.id, t.name FROM tags t
+            "SELECT t.id, t.name, t.sort_order FROM tags t
              INNER JOIN template_tags tt ON tt.tag_id = t.id
              WHERE tt.template_id = ?1
-             ORDER BY t.name",
+             ORDER BY t.sort_order, t.name",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
@@ -349,6 +379,7 @@ fn get_tags_for_template(conn: &rusqlite::Connection, template_id: &str) -> Resu
             Ok(Tag {
                 id: row.get(0)?,
                 name: row.get(1)?,
+                sort_order: row.get(2)?,
             })
         })
         .map_err(|e| e.to_string())?;
@@ -1095,15 +1126,23 @@ pub fn import_bundle(app: AppHandle, request: ImportRequest) -> Result<serde_jso
             } else {
                 let new_name = format!("{} (imported)", tag.name);
                 let id = ulid::Ulid::new().to_string();
-                conn.execute("INSERT INTO tags (id, name) VALUES (?1, ?2)", rusqlite::params![id, new_name])
-                    .map_err(|e| e.to_string())?;
+                let sort_order = next_tag_sort_order(&conn)?;
+                conn.execute(
+                    "INSERT INTO tags (id, name, sort_order) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![id, new_name, sort_order],
+                )
+                .map_err(|e| e.to_string())?;
                 tag_name_to_id.insert(new_name, id);
                 imported_tags += 1;
             }
         } else {
             let id = ulid::Ulid::new().to_string();
-            conn.execute("INSERT INTO tags (id, name) VALUES (?1, ?2)", rusqlite::params![id, tag.name])
-                .map_err(|e| e.to_string())?;
+            let sort_order = next_tag_sort_order(&conn)?;
+            conn.execute(
+                "INSERT INTO tags (id, name, sort_order) VALUES (?1, ?2, ?3)",
+                rusqlite::params![id, tag.name, sort_order],
+            )
+            .map_err(|e| e.to_string())?;
             tag_name_to_id.insert(tag.name.clone(), id);
             imported_tags += 1;
         }

@@ -121,7 +121,8 @@
     },
     "variableCount": "{{count}}個の変数",
     "empty": "変数がありません。",
-    "emptyGuide": "＋ボタンで変数を追加してください。変数はテンプレート使用時に入力フォームになります。"
+    "emptyGuide": "＋ボタンで変数を追加してください。変数はテンプレート使用時に入力フォームになります。",
+    "dragHandleTitle": "ドラッグして並べ替え"
   },
   "launcher": {
     "searchPlaceholder": "テンプレートを検索...",
@@ -146,6 +147,7 @@
     "title": "タグ管理",
     "newTag": "新規タグ",
     "nameLabel": "タグ名",
+    "dragHandleTitle": "ドラッグして並べ替え",
     "placeholder": {
       "name": "タグ名を入力"
     },

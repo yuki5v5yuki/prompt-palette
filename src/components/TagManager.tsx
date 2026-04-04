@@ -1,8 +1,79 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Tag } from "../types";
-import { listTags, createTag, deleteTag } from "../desktop";
+import { listTags, createTag, deleteTag, reorderTags } from "../desktop";
 import { useToast } from "./Toast";
+
+function SortableTagRow({
+  tag,
+  onDelete,
+  t,
+}: {
+  tag: Tag;
+  onDelete: (id: string) => void;
+  t: (key: string) => string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tag.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`item-row${isDragging ? " dragging" : ""}`}
+    >
+      <div className="item-row-main">
+        <span
+          className="drag-handle"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          title={t("tag.dragHandleTitle")}
+          aria-label={t("tag.dragHandleTitle")}
+        >
+          ⠿
+        </span>
+        <div className="item-info">
+          <span className="tag-badge">{tag.name}</span>
+        </div>
+      </div>
+      <div className="item-actions">
+        <button
+          className="btn btn-ghost btn-xs btn-danger-text"
+          onClick={() => onDelete(tag.id)}
+        >
+          {t("common.delete")}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function TagManager() {
   const { t } = useTranslation();
@@ -24,6 +95,32 @@ export default function TagManager() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const oldIndex = tags.findIndex((tg) => tg.id === activeId);
+      const newIndex = tags.findIndex((tg) => tg.id === overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(tags, oldIndex, newIndex);
+      setTags(reordered);
+
+      const r = await reorderTags(reordered.map((tg) => tg.id));
+      if (!r.ok) {
+        showToast(t("toast.saveFailed"), "error");
+        await reload();
+      }
+    },
+    [tags, reload, showToast, t]
+  );
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -93,18 +190,27 @@ export default function TagManager() {
         {tags.length === 0 && (
           <p className="empty-message">{t("tag.empty")}</p>
         )}
-        {tags.map((tag) => (
-          <div key={tag.id} className="item-row">
-            <div className="item-info">
-              <span className="tag-badge">{tag.name}</span>
-            </div>
-            <div className="item-actions">
-              <button className="btn btn-ghost btn-xs btn-danger-text" onClick={() => handleDelete(tag.id)}>
-                {t("common.delete")}
-              </button>
-            </div>
-          </div>
-        ))}
+        {tags.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={tags.map((tg) => tg.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {tags.map((tag) => (
+                <SortableTagRow
+                  key={tag.id}
+                  tag={tag}
+                  onDelete={handleDelete}
+                  t={t}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
     </div>
   );

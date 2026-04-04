@@ -11,6 +11,7 @@ export interface Category {
 export interface Tag {
   id: string;
   name: string;
+  sortOrder: number;
 }
 
 export interface Template {

@@ -100,6 +100,9 @@ export const createTag = (input: CreateTagInput) =>
 export const deleteTag = (id: string) =>
   invokeCommand<void>("delete_tag", { id });
 
+export const reorderTags = (tagIds: string[]) =>
+  invokeCommand<void>("reorder_tags", { tagIds });
+
 // --- Templates ---
 
 export const listTemplates = () =>
