@@ -88,3 +88,28 @@ pub fn get_table_count(conn: &Connection) -> i32 {
     )
     .unwrap_or(0)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    #[test]
+    fn schema_version_empty_table() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("CREATE TABLE schema_version (version INTEGER NOT NULL);")
+            .unwrap();
+        assert_eq!(get_schema_version(&conn), 0);
+    }
+
+    #[test]
+    fn schema_version_max() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE schema_version (version INTEGER NOT NULL);
+             INSERT INTO schema_version (version) VALUES (1), (3);",
+        )
+        .unwrap();
+        assert_eq!(get_schema_version(&conn), 3);
+    }
+}

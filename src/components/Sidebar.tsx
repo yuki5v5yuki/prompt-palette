@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
+import { emitTo } from "@tauri-apps/api/event";
 import { FileText, Tag, Variable, ArrowUpDown, Settings, type LucideIcon } from "lucide-react";
+import { setSetting } from "../desktop";
 
 export type NavTab = "templates" | "tags" | "packages" | "importExport" | "settings";
 
@@ -45,13 +47,13 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="lang-switcher-small">
           <button
             className={`lang-btn-small ${i18n.language === "ja" ? "active" : ""}`}
-            onClick={() => i18n.changeLanguage("ja")}
+            onClick={() => { i18n.changeLanguage("ja"); void setSetting("language", "ja"); emitTo("launcher", "language-changed", "ja"); }}
           >
             JP
           </button>
           <button
             className={`lang-btn-small ${i18n.language === "en" ? "active" : ""}`}
-            onClick={() => i18n.changeLanguage("en")}
+            onClick={() => { i18n.changeLanguage("en"); void setSetting("language", "en"); emitTo("launcher", "language-changed", "en"); }}
           >
             EN
           </button>

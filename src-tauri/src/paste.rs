@@ -1,7 +1,7 @@
-use enigo::{Enigo, Keyboard, Settings, Key, Direction};
+use enigo::{Direction, Enigo, Key, Keyboard, Settings};
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// Copy text to clipboard, hide launcher, refocus previous window, and send Ctrl+V.
@@ -21,11 +21,20 @@ pub async fn paste_template(app: AppHandle, text: String) -> Result<(), String> 
     thread::sleep(Duration::from_millis(150));
 
     // 4. Send Ctrl+V keystroke
+    let app_for_keystroke = app.clone();
     thread::spawn(move || {
-        let mut enigo = Enigo::new(&Settings::default()).expect("Failed to create Enigo");
-        let _ = enigo.key(Key::Control, Direction::Press);
-        let _ = enigo.key(Key::Unicode('v'), Direction::Click);
-        let _ = enigo.key(Key::Control, Direction::Release);
+        match Enigo::new(&Settings::default()) {
+            Ok(mut enigo) => {
+                let _ = enigo.key(Key::Control, Direction::Press);
+                let _ = enigo.key(Key::Unicode('v'), Direction::Click);
+                let _ = enigo.key(Key::Control, Direction::Release);
+            }
+            Err(e) => {
+                let msg = format!("Failed to initialize keyboard simulation: {}", e);
+                eprintln!("Prompt Palette: {}", msg);
+                let _ = app_for_keystroke.emit("paste-keystroke-failed", msg);
+            }
+        }
     });
 
     Ok(())

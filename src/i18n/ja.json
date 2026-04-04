@@ -2,7 +2,9 @@
   "app": {
     "name": "Prompt Palette",
     "version": "v0.1.0",
-    "description": "どこでも使えるテキスト挿入ランチャー"
+    "description": "どこでも使えるテキスト挿入ランチャー",
+    "dataLoadFailed": "データベースに接続できませんでした。アプリを再起動するか、サポートに連絡してください。",
+    "retryLoad": "再試行"
   },
   "common": {
     "language": "言語",
@@ -123,6 +125,9 @@
   },
   "launcher": {
     "searchPlaceholder": "テンプレートを検索...",
+    "loadFailed": "テンプレートの読み込みに失敗しました。",
+    "pasteKeystrokeFailed": "キー入力の送信に失敗しました。クリップボードにはコピー済みです。手動で貼り付け（Ctrl+V）してください。",
+    "retry": "再読み込み",
     "noResults": "一致するテンプレートがありません",
     "submit": "確定 (Enter)",
     "inputPlaceholder": "入力してください",
@@ -184,6 +189,7 @@
     "importAnother": "別のファイルをインポート"
   },
   "onboarding": {
+    "seedFailed": "サンプルデータの読み込みに失敗しました。もう一度お試しください。",
     "welcome": "テキスト挿入ランチャーへようこそ！Ctrl+Space でどこでもテンプレートを呼び出せます。",
     "step1": "テンプレートを登録する",
     "step2": "Ctrl+Space でランチャーを起動",
@@ -199,7 +205,8 @@
     "categorySaved": "カテゴリを保存しました",
     "categoryDeleted": "カテゴリを削除しました",
     "saveFailed": "保存に失敗しました",
-    "deleteFailed": "削除に失敗しました"
+    "deleteFailed": "削除に失敗しました",
+    "loadFailed": "データの読み込みに失敗しました"
   },
   "settings": {
     "title": "設定",

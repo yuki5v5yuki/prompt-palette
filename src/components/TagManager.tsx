@@ -2,17 +2,24 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { Tag } from "../types";
 import { listTags, createTag, deleteTag } from "../desktop";
+import { useToast } from "./Toast";
 
 export default function TagManager() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [tags, setTags] = useState<Tag[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [name, setName] = useState("");
 
   const reload = useCallback(async () => {
     const tgs = await listTags();
-    setTags(tgs ?? []);
-  }, []);
+    if (!tgs.ok) {
+      showToast(t("toast.loadFailed"), "error");
+      setTags([]);
+      return;
+    }
+    setTags(tgs.data ?? []);
+  }, [showToast, t]);
 
   useEffect(() => {
     reload();
@@ -20,7 +27,11 @@ export default function TagManager() {
 
   const handleCreate = async () => {
     if (!name.trim()) return;
-    await createTag({ name: name.trim() });
+    const r = await createTag({ name: name.trim() });
+    if (!r.ok) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
+    }
     setName("");
     setIsCreating(false);
     await reload();
@@ -28,7 +39,11 @@ export default function TagManager() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(t("common.confirmDelete"))) return;
-    await deleteTag(id);
+    const r = await deleteTag(id);
+    if (!r.ok) {
+      showToast(t("toast.deleteFailed"), "error");
+      return;
+    }
     await reload();
   };
 

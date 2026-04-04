@@ -2,7 +2,9 @@
   "app": {
     "name": "Prompt Palette",
     "version": "v0.1.0",
-    "description": "Global text insertion launcher"
+    "description": "Global text insertion launcher",
+    "dataLoadFailed": "Could not connect to the database. Try restarting the app or contact support.",
+    "retryLoad": "Retry"
   },
   "common": {
     "language": "Language",
@@ -123,6 +125,9 @@
   },
   "launcher": {
     "searchPlaceholder": "Search templates...",
+    "loadFailed": "Failed to load templates.",
+    "pasteKeystrokeFailed": "Could not send the paste keystroke. Text is on the clipboard—press Ctrl+V to paste manually.",
+    "retry": "Reload",
     "noResults": "No matching templates",
     "submit": "Submit (Enter)",
     "inputPlaceholder": "Enter a value",
@@ -184,6 +189,7 @@
     "importAnother": "Import another file"
   },
   "onboarding": {
+    "seedFailed": "Could not load sample data. Please try again.",
     "welcome": "Welcome to Prompt Palette! Press Ctrl+Space to launch the template picker from anywhere.",
     "step1": "Register your templates",
     "step2": "Press Ctrl+Space to open the launcher",
@@ -199,7 +205,8 @@
     "categorySaved": "Category saved",
     "categoryDeleted": "Category deleted",
     "saveFailed": "Failed to save",
-    "deleteFailed": "Failed to delete"
+    "deleteFailed": "Failed to delete",
+    "loadFailed": "Failed to load data"
   },
   "settings": {
     "title": "Settings",

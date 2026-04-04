@@ -30,6 +30,13 @@ declare global {
   }
 }
 
+export type InvokeSuccess<T> = { ok: true; data: T };
+export type InvokeFailure =
+  | { ok: false; reason: "not_tauri" }
+  | { ok: false; reason: "invoke_failed"; error: unknown };
+
+export type InvokeResult<T> = InvokeSuccess<T> | InvokeFailure;
+
 const isTauriRuntime = () =>
   typeof window !== "undefined" &&
   typeof window.__TAURI_INTERNALS__ !== "undefined";
@@ -37,17 +44,18 @@ const isTauriRuntime = () =>
 const invokeCommand = async <T>(
   command: string,
   payload?: Record<string, unknown>
-): Promise<T | null> => {
+): Promise<InvokeResult<T>> => {
   if (!isTauriRuntime()) {
-    return null;
+    return { ok: false, reason: "not_tauri" };
   }
 
   try {
     const { invoke } = await import("@tauri-apps/api/core");
-    return await invoke<T>(command, payload);
-  } catch (e) {
-    console.error(`[invokeCommand] ${command} failed:`, e);
-    return null;
+    const data = await invoke<T>(command, payload);
+    return { ok: true, data };
+  } catch (error) {
+    console.error(`[invokeCommand] ${command} failed:`, error);
+    return { ok: false, reason: "invoke_failed", error };
   }
 };
 
@@ -171,7 +179,15 @@ export const importBundle = (request: ImportRequest) =>
 // --- Settings ---
 
 export const getSetting = (key: string) =>
-  invokeCommand<string>("get_setting", { key });
+  invokeCommand<string | null>("get_setting", { key });
+
+export const setSetting = (key: string, value: string) =>
+  invokeCommand<void>("set_setting", { key, value });
 
 export const setGlobalHotkey = (shortcut: string) =>
   invokeCommand<void>("set_global_hotkey", { shortcut });
+
+// --- Paste ---
+
+export const pasteTemplate = (text: string) =>
+  invokeCommand<void>("paste_template", { text });

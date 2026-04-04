@@ -11,6 +11,7 @@ import {
   createVariable,
   updateVariable,
 } from "../desktop";
+import { useToast } from "./Toast";
 
 /** Extended package info with its single auto-created variable */
 interface PackageWithVar {
@@ -20,6 +21,7 @@ interface PackageWithVar {
 
 export default function VariablePackageManager() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [items, setItems] = useState<PackageWithVar[]>([]);
 
   // Creating new variable
@@ -40,16 +42,21 @@ export default function VariablePackageManager() {
 
   const reload = useCallback(async () => {
     const pkgs = await listVariablePackages();
-    const list = pkgs ?? [];
-    // Load the first variable for each package (1:1 relationship)
+    if (!pkgs.ok) {
+      showToast(t("toast.loadFailed"), "error");
+      setItems([]);
+      return;
+    }
+    const list = pkgs.data ?? [];
     const withVars: PackageWithVar[] = await Promise.all(
       list.map(async (pkg) => {
         const vars = await listVariables(pkg.id);
-        return { pkg, variable: vars && vars.length > 0 ? vars[0] : null };
+        const vlist = vars.ok ? (vars.data ?? []) : [];
+        return { pkg, variable: vlist.length > 0 ? vlist[0] : null };
       })
     );
     setItems(withVars);
-  }, []);
+  }, [showToast, t]);
 
   useEffect(() => {
     reload();
@@ -69,20 +76,26 @@ export default function VariablePackageManager() {
     const trimmed = newName.trim();
     if (!trimmed) return;
 
-    // Create package
-    const pkg = await createVariablePackage({ name: trimmed });
-    if (pkg) {
-      const filteredOptions = newOptions.map((s) => s.trim()).filter(Boolean);
-      const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
-      await createVariable({
-        packageId: pkg.id,
-        key: trimmed,
-        label: trimmed,
-        defaultValue: newDefault.trim() || undefined,
-        options: optionsArray,
-        allowFreeText: newAllowFreeText,
-        required: newRequired,
-      });
+    const pkgRes = await createVariablePackage({ name: trimmed });
+    if (!pkgRes.ok || !pkgRes.data) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
+    }
+    const pkg = pkgRes.data;
+    const filteredOptions = newOptions.map((s) => s.trim()).filter(Boolean);
+    const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
+    const varRes = await createVariable({
+      packageId: pkg.id,
+      key: trimmed,
+      label: trimmed,
+      defaultValue: newDefault.trim() || undefined,
+      options: optionsArray,
+      allowFreeText: newAllowFreeText,
+      required: newRequired,
+    });
+    if (!varRes.ok) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
     }
     resetCreate();
     await reload();
@@ -91,7 +104,11 @@ export default function VariablePackageManager() {
   // --- Delete ---
   const handleDelete = async (id: string) => {
     if (!window.confirm(t("common.confirmDelete"))) return;
-    await deleteVariablePackage(id);
+    const r = await deleteVariablePackage(id);
+    if (!r.ok) {
+      showToast(t("toast.deleteFailed"), "error");
+      return;
+    }
     if (editingId === id) resetEdit();
     await reload();
   };
@@ -122,15 +139,18 @@ export default function VariablePackageManager() {
 
     const trimmedName = editName.trim();
 
-    // Update package name
-    await updateVariablePackage(editingId, { name: trimmedName });
+    const upPkg = await updateVariablePackage(editingId, { name: trimmedName });
+    if (!upPkg.ok) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
+    }
 
-    // Update variable (sync key/label + settings)
     const filteredOptions = editOptions.map((s) => s.trim()).filter(Boolean);
     const optionsArray = filteredOptions.length > 0 ? filteredOptions : undefined;
 
+    let varOk = false;
     if (item.variable) {
-      await updateVariable(item.variable.id, {
+      const uv = await updateVariable(item.variable.id, {
         key: trimmedName,
         label: trimmedName,
         defaultValue: editDefault.trim() || undefined,
@@ -138,9 +158,9 @@ export default function VariablePackageManager() {
         allowFreeText: editAllowFreeText,
         required: editRequired,
       });
+      varOk = uv.ok;
     } else {
-      // Variable doesn't exist yet (legacy data) — create it
-      await createVariable({
+      const cv = await createVariable({
         packageId: editingId,
         key: trimmedName,
         label: trimmedName,
@@ -149,6 +169,11 @@ export default function VariablePackageManager() {
         allowFreeText: editAllowFreeText,
         required: editRequired,
       });
+      varOk = cv.ok;
+    }
+    if (!varOk) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
     }
 
     resetEdit();

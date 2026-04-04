@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import Fuse from "fuse.js";
+import Fuse, { type FuseResultMatch } from "fuse.js";
 import type { TemplateWithTags, VariableFormField, Category } from "../types";
 import { ICON_MAP, CategoryIcon } from "./CategoryIcon";
 import {
@@ -11,6 +11,7 @@ import {
   getTemplateFormSchema,
   interpolateTemplate,
   appendVariableOption,
+  pasteTemplate,
 } from "../desktop";
 
 const fuseOptions = {
@@ -25,9 +26,9 @@ const fuseOptions = {
 };
 
 // Highlight matched ranges in a string
-function highlightMatches(text: string, indices: readonly [number, number][] | undefined) {
+function highlightMatches(text: string, indices: readonly [number, number][] | undefined): ReactNode {
   if (!indices || indices.length === 0) return text;
-  const result: (string | JSX.Element)[] = [];
+  const result: ReactNode[] = [];
   let lastEnd = 0;
   for (const [start, end] of indices) {
     if (start > lastEnd) result.push(text.slice(lastEnd, start));
@@ -46,7 +47,7 @@ export default function Launcher() {
   const [query, setQuery] = useState("");
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
   const [results, setResults] = useState<TemplateWithTags[]>([]);
-  const [matchMap, setMatchMap] = useState<Map<string, Fuse.FuseResultMatch[]>>(new Map());
+  const [matchMap, setMatchMap] = useState<Map<string, FuseResultMatch[]>>(new Map());
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -64,20 +65,27 @@ export default function Launcher() {
   const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
   const [comboFreeText, setComboFreeText] = useState<Record<string, boolean>>({});
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [pasteWarning, setPasteWarning] = useState<string | null>(null);
 
   const loadTemplates = useCallback(async () => {
-    try {
-      const tpls = await listTemplatesByFrequency();
-      const list = tpls ?? [];
-      setTemplates(list);
-      setResults(list);
-      fuseRef.current = new Fuse(list, fuseOptions);
-    } catch {}
-    try {
-      const cats = await listCategories();
-      setCategories(cats ?? []);
-    } catch {}
-  }, []);
+    setLoadError(null);
+    const tplRes = await listTemplatesByFrequency();
+    const catRes = await listCategories();
+    if (!tplRes.ok || !catRes.ok) {
+      setLoadError(t("launcher.loadFailed"));
+      setTemplates([]);
+      setResults([]);
+      fuseRef.current = null;
+      setCategories(catRes.ok ? (catRes.data ?? []) : []);
+      return;
+    }
+    const list = tplRes.data ?? [];
+    setTemplates(list);
+    setResults(list);
+    fuseRef.current = new Fuse(list, fuseOptions);
+    setCategories(catRes.data ?? []);
+  }, [t]);
 
   useEffect(() => {
     loadTemplates();
@@ -92,6 +100,33 @@ export default function Launcher() {
     return () => { unlisten.then((fn) => fn()); };
   }, [i18n]);
 
+  // Listen for theme changes from main window
+  useEffect(() => {
+    const unlisten = listen<string>("theme-changed", (event) => {
+      document.documentElement.setAttribute("data-theme", event.payload);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
+  // Listen for font size changes from main window
+  useEffect(() => {
+    const unlisten = listen<string>("font-size-changed", (event) => {
+      if (event.payload === "medium") {
+        document.documentElement.removeAttribute("data-font-size");
+      } else {
+        document.documentElement.setAttribute("data-font-size", event.payload);
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
+  useEffect(() => {
+    const unlisten = listen<string>("paste-keystroke-failed", () => {
+      setPasteWarning(t("launcher.pasteKeystrokeFailed"));
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [t]);
+
   useEffect(() => {
     if (!query.trim()) {
       setResults(templates);
@@ -102,9 +137,9 @@ export default function Launcher() {
     if (fuseRef.current) {
       const fuseResults = fuseRef.current.search(query);
       setResults(fuseResults.map((r) => r.item));
-      const newMatchMap = new Map<string, Fuse.FuseResultMatch[]>();
+      const newMatchMap = new Map<string, FuseResultMatch[]>();
       for (const r of fuseResults) {
-        if (r.matches) newMatchMap.set(r.item.id, r.matches as Fuse.FuseResultMatch[]);
+        if (r.matches) newMatchMap.set(r.item.id, [...r.matches]);
       }
       setMatchMap(newMatchMap);
       setSelectedIndex(0);
@@ -141,6 +176,7 @@ export default function Launcher() {
     setFormValues({});
     setActiveFieldIndex(0);
     setValidationErrors(new Set());
+    setPasteWarning(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
@@ -148,7 +184,9 @@ export default function Launcher() {
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       await getCurrentWindow().hide();
-    } catch {}
+    } catch (e) {
+      console.error("[Launcher] hide failed:", e);
+    }
     resetLauncher();
   }, [resetLauncher]);
 
@@ -162,16 +200,14 @@ export default function Launcher() {
   }, [hideLauncher]);
 
   const pasteText = useCallback(async (text: string) => {
+    setPasteWarning(null);
+    const r = await pasteTemplate(text);
+    if (r.ok) return;
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("paste_template", { text });
+      const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
+      await writeText(text);
     } catch {
-      try {
-        const { writeText } = await import("@tauri-apps/plugin-clipboard-manager");
-        await writeText(text);
-      } catch {
-        navigator.clipboard.writeText(text);
-      }
+      void navigator.clipboard.writeText(text);
     }
   }, []);
 
@@ -197,9 +233,12 @@ export default function Launcher() {
 
   const selectTemplate = useCallback(
     async (template: TemplateWithTags) => {
-      // Check if template has variables
-      const schema = await getTemplateFormSchema(template.id);
-      const fields = schema ?? [];
+      const schemaRes = await getTemplateFormSchema(template.id);
+      if (!schemaRes.ok) {
+        setLoadError(t("launcher.loadFailed"));
+        return;
+      }
+      const fields = schemaRes.data ?? [];
 
       if (fields.length > 0) {
         // Has variables — show variable input form
@@ -214,13 +253,16 @@ export default function Launcher() {
         setActiveFieldIndex(0);
         setStep("variables");
       } else {
-        // No variables — direct paste
-        await recordTemplateUse(template.id);
+        const useRes = await recordTemplateUse(template.id);
+        if (!useRes.ok) {
+          setLoadError(t("launcher.loadFailed"));
+          return;
+        }
         await pasteText(template.body);
         resetLauncher();
       }
     },
-    [pasteText, resetLauncher]
+    [pasteText, resetLauncher, t]
   );
 
   const submitVariables = useCallback(async () => {
@@ -245,20 +287,23 @@ export default function Launcher() {
     }
     setValidationErrors(new Set());
 
-    await recordTemplateUse(selectedTemplate.id);
+    const useRes = await recordTemplateUse(selectedTemplate.id);
+    if (!useRes.ok) {
+      setLoadError(t("launcher.loadFailed"));
+      return;
+    }
 
-    // Interpolate template with values
-    const text = await interpolateTemplate({
+    const intRes = await interpolateTemplate({
       templateId: selectedTemplate.id,
       values: formValues,
     });
+    const text = intRes.ok ? (intRes.data ?? selectedTemplate.body) : selectedTemplate.body;
 
-    // Save input history
     await saveInputHistory(formFields, formValues);
 
-    await pasteText(text ?? selectedTemplate.body);
+    await pasteText(text);
     resetLauncher();
-  }, [selectedTemplate, formFields, formValues, pasteText, resetLauncher, saveInputHistory]);
+  }, [selectedTemplate, formFields, formValues, pasteText, resetLauncher, saveInputHistory, t]);
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -325,6 +370,19 @@ export default function Launcher() {
   if (step === "search") {
     return (
       <div className="launcher" onKeyDown={handleSearchKeyDown}>
+        {loadError && (
+          <div className="launcher-banner launcher-banner-error" role="alert">
+            <span>{loadError}</span>
+            <button type="button" className="launcher-banner-retry" onClick={() => void loadTemplates()}>
+              {t("launcher.retry")}
+            </button>
+          </div>
+        )}
+        {pasteWarning && (
+          <div className="launcher-banner launcher-banner-warn" role="status">
+            {pasteWarning}
+          </div>
+        )}
         <div className="launcher-search">
           <input
             ref={inputRef}
@@ -441,6 +499,11 @@ export default function Launcher() {
 
   return (
     <div className="launcher" onKeyDown={handleVariableKeyDown}>
+      {pasteWarning && (
+        <div className="launcher-banner launcher-banner-warn" role="status">
+          {pasteWarning}
+        </div>
+      )}
       <div className="launcher-var-header">
         <button className="launcher-back-btn" onClick={resetLauncher}>
           &larr;

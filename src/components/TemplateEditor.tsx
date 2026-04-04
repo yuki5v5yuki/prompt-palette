@@ -104,7 +104,7 @@ export default function TemplateEditor({
   useEffect(() => {
     (async () => {
       const pkgs = await listVariablePackages();
-      setAllPackages(pkgs ?? []);
+      setAllPackages(pkgs.ok ? (pkgs.data ?? []) : []);
     })();
   }, []);
 
@@ -114,7 +114,7 @@ export default function TemplateEditor({
       const vars: Variable[] = [];
       for (const pkg of allPackages) {
         const pkgVars = await listVariables(pkg.id);
-        if (pkgVars) vars.push(...pkgVars);
+        if (pkgVars.ok && pkgVars.data) vars.push(...pkgVars.data);
       }
       setAllVariables(vars);
     })();
@@ -265,7 +265,7 @@ export default function TemplateEditor({
 
   // --- Click-to-Insert ---
   const [insertedChipKey, setInsertedChipKey] = useState<string | null>(null);
-  const insertVariable = (key: string) => {
+  const insertVariable = (key: string, _source?: HTMLElement) => {
     const editor = editorRef.current;
     if (!editor) return;
 

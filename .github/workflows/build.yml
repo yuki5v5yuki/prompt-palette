@@ -34,6 +34,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Run Rust unit tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
       - run: npm run tauri:build
 
       - uses: actions/upload-artifact@v4
@@ -95,3 +98,58 @@ jobs:
         with:
           name: prompt-palette-windows-signed
           path: ./signed/
+
+  build-msix:
+    needs: build
+    runs-on: windows-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download unsigned Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: prompt-palette-windows-unsigned
+          path: ./unsigned
+
+      - name: Find MSI file
+        id: find-msi
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path ./unsigned -Recurse -Filter "*.msi" | Select-Object -First 1
+          if (-not $msi) { Write-Error "MSI not found"; exit 1 }
+          echo "MSI_PATH=$($msi.FullName)" >> $env:GITHUB_OUTPUT
+          Write-Host "Found MSI: $($msi.FullName)"
+
+      - name: Generate MSIX assets
+        shell: pwsh
+        run: |
+          pip install Pillow
+          python msix/generate-assets.py
+
+      - name: Resolve MSIX version from tauri.conf.json
+        id: msixver
+        shell: pwsh
+        run: |
+          $json = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $segments = [string[]]($json.version -split '\.')
+          while ($segments.Count -lt 4) { $segments += '0' }
+          $four = ($segments[0..3] -join '.')
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "MSIX_VERSION=$four"
+          Write-Host "MSIX_VERSION=$four"
+
+      - name: Build MSIX package
+        shell: pwsh
+        run: |
+          ./msix/build-msix.ps1 `
+            -MsiPath "${{ steps.find-msi.outputs.MSI_PATH }}" `
+            -OutputPath "PromptPalette.msix" `
+            -Version "${{ steps.msixver.outputs.MSIX_VERSION }}" `
+            -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=PromptPalette' }}"
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-palette-msix
+          path: PromptPalette.msix

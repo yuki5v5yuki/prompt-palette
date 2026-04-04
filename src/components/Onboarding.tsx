@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 interface OnboardingProps {
   onLoadSamples: () => void;
   onSkip: () => void;
+  sampleError?: string | null;
 }
 
-export default function Onboarding({ onLoadSamples, onSkip }: OnboardingProps) {
+export default function Onboarding({ onLoadSamples, onSkip, sampleError }: OnboardingProps) {
   const { t, i18n } = useTranslation();
 
   return (
@@ -43,6 +44,10 @@ export default function Onboarding({ onLoadSamples, onSkip }: OnboardingProps) {
             English
           </button>
         </div>
+
+        {sampleError && (
+          <p className="onboarding-error" role="alert">{sampleError}</p>
+        )}
 
         <div className="onboarding-actions">
           <button className="btn btn-primary" onClick={onLoadSamples}>

@@ -2241,6 +2241,25 @@ body {
   font-size: 13px;
 }
 
+.onboarding-error {
+  color: var(--danger, #c62828);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.app-bootstrap-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
 /* ─── Scrollbar Styling ─── */
 
 ::-webkit-scrollbar {

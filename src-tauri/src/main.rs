@@ -79,18 +79,34 @@ fn main() {
                 .build(app)?;
 
             // --- Global Shortcut (read saved hotkey or fallback to Ctrl+Space) ---
-            let saved_hotkey = {
-                let conn = db::open(&handle).unwrap_or_else(|_| panic!("Failed to open DB"));
-                conn.query_row(
-                    "SELECT value FROM settings WHERE key = 'global_hotkey'",
-                    [],
-                    |row| row.get::<_, String>(0),
-                )
-                .unwrap_or_else(|_| "ctrl+space".to_string())
+            let saved_hotkey = match db::open(&handle) {
+                Ok(conn) => conn
+                    .query_row(
+                        "SELECT value FROM settings WHERE key = 'global_hotkey'",
+                        [],
+                        |row| row.get::<_, String>(0),
+                    )
+                    .unwrap_or_else(|_| "ctrl+space".to_string()),
+                Err(e) => {
+                    eprintln!(
+                        "Prompt Palette: could not open database to read hotkey (using ctrl+space): {}",
+                        e
+                    );
+                    "ctrl+space".to_string()
+                }
             };
-            let shortcut: Shortcut = saved_hotkey.parse().unwrap_or_else(|_| {
-                "ctrl+space".parse().expect("Invalid fallback shortcut")
-            });
+            let shortcut: Shortcut = match saved_hotkey.parse() {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!(
+                        "Prompt Palette: invalid saved hotkey {:?} (using ctrl+space): {}",
+                        saved_hotkey, e
+                    );
+                    "ctrl+space"
+                        .parse()
+                        .expect("ctrl+space must be a valid global shortcut")
+                }
+            };
             let _ = app.global_shortcut().unregister(shortcut);
             let handle_for_shortcut = app.handle().clone();
             app.handle().global_shortcut().on_shortcut(
@@ -150,6 +166,7 @@ fn main() {
             paste::paste_template,
             // Settings
             commands::get_setting,
+            commands::set_setting,
             commands::set_global_hotkey,
         ])
         .run(tauri::generate_context!())

@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Default capabilities for Prompt Palette",
-  "windows": ["main", "launcher"],
+  "identifier": "main-capability",
+  "description": "Main window — templates, settings, global shortcut, clipboard",
+  "windows": ["main"],
   "permissions": [
     "core:default",
     "core:window:default",

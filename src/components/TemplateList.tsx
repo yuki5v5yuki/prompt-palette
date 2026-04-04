@@ -361,18 +361,25 @@ export default function TemplateList() {
 
   const handleSaveCategory = async () => {
     if (!categoryFormName.trim()) return;
+    let ok = false;
     if (editingCategoryId) {
-      await updateCategory(editingCategoryId, {
+      const r = await updateCategory(editingCategoryId, {
         name: categoryFormName.trim(),
         icon: categoryFormIcon || undefined,
         color: categoryFormColor || undefined,
       });
+      ok = r.ok;
     } else {
-      await createCategory({
+      const r = await createCategory({
         name: categoryFormName.trim(),
         icon: categoryFormIcon || undefined,
         color: categoryFormColor || undefined,
       });
+      ok = r.ok;
+    }
+    if (!ok) {
+      showToast(t("toast.saveFailed"), "error");
+      return;
     }
     resetCategoryForm();
     showToast(t("toast.categorySaved"), "success");
@@ -386,7 +393,11 @@ export default function TemplateList() {
       ? t("category.confirmDeleteWithCount", { count: catTemplates.length })
       : t("common.confirmDelete");
     if (!window.confirm(message)) return;
-    await deleteCategory(id);
+    const del = await deleteCategory(id);
+    if (!del.ok) {
+      showToast(t("toast.deleteFailed"), "error");
+      return;
+    }
     if (editingCategoryId === id) resetCategoryForm();
     showToast(t("toast.categoryDeleted"), "success");
     await reload();
@@ -406,10 +417,13 @@ export default function TemplateList() {
       listCategories(),
       listTags(),
     ]);
-    setTemplates(tpls ?? []);
-    setCategories(cats ?? []);
-    setTags(tgs ?? []);
-  }, []);
+    if (!tpls.ok || !cats.ok || !tgs.ok) {
+      showToast(t("toast.loadFailed"), "error");
+    }
+    setTemplates(tpls.ok ? (tpls.data ?? []) : []);
+    setCategories(cats.ok ? (cats.data ?? []) : []);
+    setTags(tgs.ok ? (tgs.data ?? []) : []);
+  }, [showToast, t]);
 
   useEffect(() => {
     reload();
@@ -419,7 +433,7 @@ export default function TemplateList() {
 
   const handleCreate = async (input: CreateTemplateInput) => {
     const result = await createTemplate(input);
-    if (result) {
+    if (result.ok && result.data) {
       showToast(t("toast.templateCreated"), "success");
     } else {
       showToast(t("toast.saveFailed"), "error");
@@ -430,7 +444,7 @@ export default function TemplateList() {
 
   const handleUpdate = async (id: string, input: UpdateTemplateInput) => {
     const result = await updateTemplate(id, input);
-    if (result) {
+    if (result.ok && result.data) {
       showToast(t("toast.templateSaved"), "success");
     } else {
       showToast(t("toast.saveFailed"), "error");
@@ -446,16 +460,20 @@ export default function TemplateList() {
       tagIds: tpl.tags.map((tag) => tag.id),
     };
     const result = await createTemplate(input);
-    if (result) {
+    if (result.ok && result.data) {
       showToast(t("toast.templateDuplicated"), "success");
-      setSelectedId(result.id);
+      setSelectedId(result.data.id);
     }
     await reload();
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(t("common.confirmDelete"))) return;
-    await deleteTemplate(id);
+    const del = await deleteTemplate(id);
+    if (!del.ok) {
+      showToast(t("toast.deleteFailed"), "error");
+      return;
+    }
     setSelectedId(null);
     showToast(t("toast.templateDeleted"), "success");
     await reload();

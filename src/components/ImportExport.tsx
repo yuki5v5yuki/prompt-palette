@@ -7,6 +7,7 @@ import {
   previewImport,
   importBundle,
 } from "../desktop";
+import { useToast } from "./Toast";
 import type {
   TemplateWithTags,
   Category,
@@ -48,6 +49,7 @@ export default function ImportExport() {
 
 function ExportPanel() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [templates, setTemplates] = useState<TemplateWithTags[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -60,8 +62,11 @@ function ExportPanel() {
   const load = async () => {
     const tpls = await listTemplates();
     const cats = await listCategories();
-    if (tpls) setTemplates(tpls);
-    if (cats) setCategories(cats);
+    if (!tpls.ok || !cats.ok) {
+      showToast(t("toast.loadFailed"), "error");
+    }
+    setTemplates(tpls.ok ? (tpls.data ?? []) : []);
+    setCategories(cats.ok ? (cats.data ?? []) : []);
     setLoaded(true);
   };
 
@@ -95,8 +100,8 @@ function ExportPanel() {
         packName: packName.trim(),
         packDescription: packDesc.trim() || undefined,
       });
-      if (bundle) {
-        const json = JSON.stringify(bundle, null, 2);
+      if (bundle.ok && bundle.data) {
+        const json = JSON.stringify(bundle.data, null, 2);
         // Download as file
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -106,6 +111,8 @@ function ExportPanel() {
         a.click();
         URL.revokeObjectURL(url);
         setResult(t("importExport.exportSuccess"));
+      } else {
+        setResult(t("toast.saveFailed"));
       }
     } catch (e) {
       setResult(String(e));
@@ -199,6 +206,7 @@ function ExportPanel() {
 
 function ImportPanel() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bundleJson, setBundleJson] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -217,8 +225,8 @@ function ImportPanel() {
       setBundleJson(text);
       setFileName(file.name);
       const prev = await previewImport(text);
-      if (prev) {
-        setPreview(prev);
+      if (prev.ok && prev.data) {
+        setPreview(prev.data);
       } else {
         setError(t("importExport.invalidBundle"));
       }
@@ -243,7 +251,11 @@ function ImportPanel() {
         bundleJson,
         conflictStrategy: strategy,
       });
-      if (res) setResult(res);
+      if (res.ok && res.data) {
+        setResult(res.data);
+      } else {
+        showToast(t("toast.saveFailed"), "error");
+      }
     } catch (e) {
       setError(String(e));
     }

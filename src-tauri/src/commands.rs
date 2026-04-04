@@ -1292,6 +1292,18 @@ pub fn get_setting(app: AppHandle, key: String) -> Result<Option<String>, String
 }
 
 #[tauri::command]
+pub fn set_setting(app: AppHandle, key: String, value: String) -> Result<(), String> {
+    let conn = db::open(&app)?;
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES (?1, ?2)
+         ON CONFLICT(key) DO UPDATE SET value = ?2",
+        rusqlite::params![key, value],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn set_global_hotkey(app: AppHandle, shortcut: String) -> Result<(), String> {
     // Validate the new shortcut
     let new_shortcut: Shortcut = shortcut

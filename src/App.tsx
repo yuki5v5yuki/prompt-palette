@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar, { type NavTab } from "./components/Sidebar";
 import TemplateList from "./components/TemplateList";
 import TagManager from "./components/TagManager";
@@ -11,9 +12,28 @@ import { isOnboarded, seedSampleData } from "./desktop";
 import "./styles.css";
 
 function App() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<NavTab>("templates");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [ready, setReady] = useState(false);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [sampleError, setSampleError] = useState<string | null>(null);
+
+  const checkOnboarding = useCallback(async () => {
+    setBootstrapError(null);
+    const r = await isOnboarded();
+    const dismissed = localStorage.getItem("onboarding_done");
+    if (r.ok) {
+      if (r.data === false && !dismissed) {
+        setShowOnboarding(true);
+      }
+    } else if (r.reason === "not_tauri") {
+      // Browser preview without Tauri — skip onboarding gate
+    } else if (r.reason === "invoke_failed") {
+      setBootstrapError(t("app.dataLoadFailed"));
+    }
+    setReady(true);
+  }, [t]);
 
   // Apply saved theme + check onboarding on mount
   useEffect(() => {
@@ -28,19 +48,16 @@ function App() {
       document.documentElement.setAttribute("data-font-size", savedFontSize);
     }
 
-    const checkOnboarding = async () => {
-      const onboarded = await isOnboarded();
-      const dismissed = localStorage.getItem("onboarding_done");
-      if (onboarded === false && !dismissed) {
-        setShowOnboarding(true);
-      }
-      setReady(true);
-    };
     checkOnboarding();
-  }, []);
+  }, [checkOnboarding]);
 
   const handleLoadSamples = async () => {
-    await seedSampleData();
+    setSampleError(null);
+    const r = await seedSampleData();
+    if (!r.ok) {
+      setSampleError(t("onboarding.seedFailed"));
+      return;
+    }
     localStorage.setItem("onboarding_done", "1");
     setShowOnboarding(false);
   };
@@ -52,8 +69,32 @@ function App() {
 
   if (!ready) return null;
 
+  if (bootstrapError) {
+    return (
+      <div className="app-bootstrap-error">
+        <p>{bootstrapError}</p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={async () => {
+            setReady(false);
+            await checkOnboarding();
+          }}
+        >
+          {t("app.retryLoad")}
+        </button>
+      </div>
+    );
+  }
+
   if (showOnboarding) {
-    return <Onboarding onLoadSamples={handleLoadSamples} onSkip={handleSkipOnboarding} />;
+    return (
+      <Onboarding
+        onLoadSamples={handleLoadSamples}
+        onSkip={handleSkipOnboarding}
+        sampleError={sampleError}
+      />
+    );
   }
 
   return (

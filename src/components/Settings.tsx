@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { getSetting, setGlobalHotkey } from "../desktop";
+import { emitTo } from "@tauri-apps/api/event";
+import { getSetting, setSetting, setGlobalHotkey } from "../desktop";
 
 /** Convert a KeyboardEvent.code to a Tauri-compatible key name */
 function codeToKeyName(code: string): string | null {
@@ -109,18 +110,24 @@ export default function Settings() {
   useEffect(() => {
     applyTheme(themeMode);
     localStorage.setItem("themeMode", themeMode);
+    const resolved = themeMode === "system" ? getSystemTheme() : themeMode;
+    emitTo("launcher", "theme-changed", resolved);
   }, [themeMode]);
 
   useEffect(() => {
     applyFontSize(fontSize);
     localStorage.setItem("fontSize", fontSize);
+    emitTo("launcher", "font-size-changed", fontSize);
   }, [fontSize]);
 
   // Listen for OS theme changes when in system mode
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
-      if (themeMode === "system") applyTheme("system");
+      if (themeMode === "system") {
+        applyTheme("system");
+        emitTo("launcher", "theme-changed", getSystemTheme());
+      }
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -128,8 +135,8 @@ export default function Settings() {
 
   // Load saved hotkey on mount
   useEffect(() => {
-    getSetting("global_hotkey").then((val) => {
-      if (val) setHotkey(val);
+    getSetting("global_hotkey").then((r) => {
+      if (r.ok && r.data) setHotkey(r.data);
     });
   }, []);
 
@@ -169,7 +176,7 @@ export default function Settings() {
     setError(null);
     try {
       const result = await setGlobalHotkey(pendingHotkey);
-      if (result === null) {
+      if (!result.ok) {
         setError(t("settings.hotkeyError"));
       } else {
         setHotkey(pendingHotkey);
@@ -246,13 +253,13 @@ export default function Settings() {
             <div className="settings-toggle-group">
               <button
                 className={`btn btn-sm ${i18n.language === "ja" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => i18n.changeLanguage("ja")}
+                onClick={() => { i18n.changeLanguage("ja"); void setSetting("language", "ja"); emitTo("launcher", "language-changed", "ja"); }}
               >
                 {t("common.japanese")}
               </button>
               <button
                 className={`btn btn-sm ${i18n.language === "en" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => i18n.changeLanguage("en")}
+                onClick={() => { i18n.changeLanguage("en"); void setSetting("language", "en"); emitTo("launcher", "language-changed", "en"); }}
               >
                 {t("common.english")}
               </button>
