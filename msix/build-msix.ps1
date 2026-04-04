@@ -77,8 +77,9 @@ Copy-Item -Path $AssetsSource -Destination $AssetsDest -Recurse
 $ManifestSource = Join-Path $ScriptDir "AppxManifest.xml"
 $ManifestDest = Join-Path $MsixContent "AppxManifest.xml"
 $manifestContent = Get-Content $ManifestSource -Raw
-$manifestContent = $manifestContent -replace 'Version="[^"]*"', "Version=`"$Version`""
-$manifestContent = $manifestContent -replace 'Publisher="[^"]*"', "Publisher=`"$Publisher`""
+# Identity要素のみ対象（XML宣言の version= を壊さないようcreplaceで大文字小文字区別）
+$manifestContent = $manifestContent -creplace '(?<=<Identity[^>]*)\sVersion="[^"]*"', " Version=`"$Version`""
+$manifestContent = $manifestContent -creplace '(?<=<Identity[^>]*)\sPublisher="[^"]*"', " Publisher=`"$Publisher`""
 # BOMなしUTF-8で書き込む（makeappxはBOM付きを受け付けない）
 [System.IO.File]::WriteAllText($ManifestDest, $manifestContent, (New-Object System.Text.UTF8Encoding $false))
 
