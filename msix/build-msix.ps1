@@ -47,10 +47,15 @@ $MsixContent = Join-Path $WorkDir "msix-content"
 New-Item -ItemType Directory -Force -Path $MsixContent | Out-Null
 
 # exe と関連ファイルをコピー（WebView2Loader.dll 等も含む）
+$exeName = $null
 Get-ChildItem -Path $ExtractDir -Recurse -File | Where-Object {
     $_.Extension -in '.exe', '.dll'
 } | ForEach-Object {
     Copy-Item $_.FullName -Destination $MsixContent
+    if ($_.Extension -eq '.exe' -and $null -eq $exeName) {
+        $exeName = $_.Name
+        Write-Host "  Found exe: $exeName"
+    }
 }
 
 # Tauri のリソースファイルもコピー（存在する場合）
@@ -80,6 +85,11 @@ $manifestContent = Get-Content $ManifestSource -Raw
 # Identity要素のみ対象（XML宣言の version= を壊さないようcreplaceで大文字小文字区別）
 $manifestContent = $manifestContent -creplace '(?<=<Identity[^>]*)\sVersion="[^"]*"', " Version=`"$Version`""
 $manifestContent = $manifestContent -creplace '(?<=<Identity[^>]*)\sPublisher="[^"]*"', " Publisher=`"$Publisher`""
+# exe名を動的に反映
+if ($exeName) {
+    $manifestContent = $manifestContent -creplace 'Executable="[^"]*"', "Executable=`"$exeName`""
+    Write-Host "  Executable set to: $exeName"
+}
 # BOMなしUTF-8で書き込む（makeappxはBOM付きを受け付けない）
 [System.IO.File]::WriteAllText($ManifestDest, $manifestContent, (New-Object System.Text.UTF8Encoding $false))
 
