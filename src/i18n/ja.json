@@ -36,6 +36,7 @@
     "bodyLabel": "本文",
     "categoryLabel": "カテゴリ",
     "tagsLabel": "タグ",
+    "tagPickerToggle": "タグを選択",
     "tagSearch": "タグを検索...",
     "noCategory": "なし",
     "useCount": "使用回数",

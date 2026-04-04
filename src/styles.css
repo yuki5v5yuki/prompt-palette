@@ -688,6 +688,45 @@ body {
   box-shadow: 0 1px 3px rgba(255, 215, 0, 0.25);
 }
 
+.tag-picker-group .tag-picker-selected {
+  margin-bottom: 8px;
+}
+
+.tag-picker-group .tag-picker-toggle {
+  margin-bottom: 0;
+}
+
+.tag-picker-group .tag-picker-expanded {
+  margin-top: 8px;
+}
+
+.tag-picker-group .tag-picker-expanded .tag-search-input {
+  margin-bottom: 0;
+}
+
+.tag-picker-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.tag-picker-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tag-picker-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tag-picker-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.tag-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
 /* ─── Inline Form ─── */
 
 .inline-form {

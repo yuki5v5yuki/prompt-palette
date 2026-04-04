@@ -91,6 +91,7 @@ export default function TemplateEditor({
   const [varSearch, setVarSearch] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState("");
+  const [tagPickerExpanded, setTagPickerExpanded] = useState(false);
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -409,37 +410,76 @@ export default function TemplateEditor({
       </div>
 
       {tags.length > 0 && (
-        <div className="form-group">
+        <div className="form-group tag-picker-group">
           <label className="form-label">{t("template.tagsLabel")}</label>
-          <input
-              type="text"
-              className="form-input tag-search-input"
-              placeholder={t("template.tagSearch")}
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-            />
-          <div className="tag-selector">
-            {tags
-              .filter((tag) => {
-                if (!tagFilter) return true;
-                return tag.name.toLowerCase().includes(tagFilter.toLowerCase()) || selectedTagIds.has(tag.id);
-              })
-              .sort((a, b) => {
-                const aSelected = selectedTagIds.has(a.id) ? 0 : 1;
-                const bSelected = selectedTagIds.has(b.id) ? 0 : 1;
-                return aSelected - bSelected;
-              })
-              .map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
-                  onClick={() => toggleTag(tag.id)}
-                >
-                  {tag.name}
-                </button>
-              ))}
-          </div>
+
+          {tags.some((tag) => selectedTagIds.has(tag.id)) && (
+            <div className="tag-picker-selected">
+              <div className="tag-selector">
+                {tags
+                  .filter((tag) => selectedTagIds.has(tag.id))
+                  .map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className="tag-toggle active"
+                      onClick={() => toggleTag(tag.id)}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="variable-palette-toggle tag-picker-toggle"
+            onClick={() => setTagPickerExpanded(!tagPickerExpanded)}
+          >
+            <Plus size={14} />
+            {t("template.tagPickerToggle")}
+            {tagPickerExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+
+          {tagPickerExpanded && (
+            <div className="variable-palette-expanded tag-picker-expanded">
+              <input
+                type="text"
+                className="form-input tag-search-input"
+                placeholder={t("template.tagSearch")}
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+              />
+              <div className="tag-picker-scroll">
+                <div className="tag-selector">
+                  {tags
+                    .filter((tag) => {
+                      if (!tagFilter) return true;
+                      return (
+                        tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
+                        selectedTagIds.has(tag.id)
+                      );
+                    })
+                    .sort((a, b) => {
+                      const aSelected = selectedTagIds.has(a.id) ? 0 : 1;
+                      const bSelected = selectedTagIds.has(b.id) ? 0 : 1;
+                      return aSelected - bSelected;
+                    })
+                    .map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
+                        onClick={() => toggleTag(tag.id)}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

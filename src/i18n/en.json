@@ -36,6 +36,7 @@
     "bodyLabel": "Body",
     "categoryLabel": "Category",
     "tagsLabel": "Tags",
+    "tagPickerToggle": "Select tags",
     "tagSearch": "Search tags...",
     "noCategory": "None",
     "useCount": "Use Count",
