@@ -79,7 +79,8 @@ $ManifestDest = Join-Path $MsixContent "AppxManifest.xml"
 $manifestContent = Get-Content $ManifestSource -Raw
 $manifestContent = $manifestContent -replace 'Version="[^"]*"', "Version=`"$Version`""
 $manifestContent = $manifestContent -replace 'Publisher="[^"]*"', "Publisher=`"$Publisher`""
-Set-Content -Path $ManifestDest -Value $manifestContent -Encoding UTF8
+# BOMなしUTF-8で書き込む（makeappxはBOM付きを受け付けない）
+[System.IO.File]::WriteAllText($ManifestDest, $manifestContent, (New-Object System.Text.UTF8Encoding $false))
 
 # 3. makeappx.exe でパッケージング
 Write-Host "[3/4] Creating MSIX package..." -ForegroundColor Yellow
