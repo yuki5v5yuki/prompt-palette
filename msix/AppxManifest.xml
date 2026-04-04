@@ -3,9 +3,9 @@
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
 
-  <Identity Name="PromptPalette"
+  <Identity Name="yuki5.PromptPalette"
             Version="0.1.0.0"
-            Publisher="CN=PromptPalette"
+            Publisher="CN=C04C86FA-F1E0-40B1-8499-E5BF7245F317"
             ProcessorArchitecture="x64" />
 
   <Properties>

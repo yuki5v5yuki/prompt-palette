@@ -146,7 +146,7 @@ jobs:
             -MsiPath "${{ steps.find-msi.outputs.MSI_PATH }}" `
             -OutputPath "PromptPalette.msix" `
             -Version "${{ steps.msixver.outputs.MSIX_VERSION }}" `
-            -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=PromptPalette' }}"
+            -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=C04C86FA-F1E0-40B1-8499-E5BF7245F317' }}"
 
       - name: Upload MSIX artifact
         uses: actions/upload-artifact@v4
