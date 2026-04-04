@@ -411,7 +411,10 @@ export default function TemplateEditor({
 
       {tags.length > 0 && (
         <div className="form-group tag-picker-group">
-          <label className="form-label">{t("template.tagsLabel")}</label>
+          <label className="form-label">
+            {t("template.tagsLabel")}
+            <span className="info-tooltip" title={t("template.tagsHint")}><Info size={12} /></span>
+          </label>
 
           {tags.some((tag) => selectedTagIds.has(tag.id)) && (
             <div className="tag-picker-selected">
@@ -485,7 +488,10 @@ export default function TemplateEditor({
 
       {/* Body Editing Area - palette + textarea + preview */}
       <div className="form-group">
-        <label className="form-label">{t("template.bodyLabel")}</label>
+        <label className="form-label">
+          {t("template.bodyLabel")}
+          <span className="info-tooltip" title={t("template.bodyHint")}><Info size={12} /></span>
+        </label>
 
         <div className="body-editing-area">
           {/* Variable Palette */}

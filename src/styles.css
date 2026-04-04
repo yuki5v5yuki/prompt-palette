@@ -534,6 +534,17 @@ body {
   line-height: 1.4;
 }
 
+/* ─── Info Tooltip ─── */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.info-tooltip:hover { color: var(--accent); }
+
 .form-input {
   width: 100%;
   padding: 8px 10px;

@@ -36,6 +36,8 @@
     "bodyLabel": "本文",
     "categoryLabel": "カテゴリ",
     "tagsLabel": "タグ",
+    "tagsHint": "ラベルを付けて検索しやすくできます",
+    "bodyHint": "\u007B\u007B変数名\u007D\u007D で使用時の入力欄を作れます",
     "tagPickerToggle": "タグを選択",
     "tagSearch": "タグを検索...",
     "noCategory": "なし",
@@ -112,6 +114,7 @@
   },
   "variablePackage": {
     "title": "変数管理",
+    "sectionHint": "変数はテンプレート使用時に入力フォームになります",
     "noPackagesHint": "変数がありません",
     "newPackage": "新規変数",
     "nameLabel": "変数名",
@@ -146,6 +149,7 @@
   },
   "tag": {
     "title": "タグ管理",
+    "sectionHint": "タグでテンプレートをすばやく検索できます",
     "newTag": "新規タグ",
     "nameLabel": "タグ名",
     "dragHandleTitle": "ドラッグして並べ替え",

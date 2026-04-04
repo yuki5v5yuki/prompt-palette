@@ -36,6 +36,8 @@
     "bodyLabel": "Body",
     "categoryLabel": "Category",
     "tagsLabel": "Tags",
+    "tagsHint": "Add labels to make templates easier to find",
+    "bodyHint": "Use curly-brace variables like \u007B\u007Bname\u007D\u007D as fillable fields",
     "tagPickerToggle": "Select tags",
     "tagSearch": "Search tags...",
     "noCategory": "None",
@@ -112,6 +114,7 @@
   },
   "variablePackage": {
     "title": "Variable Management",
+    "sectionHint": "Variables become input fields when using a template",
     "noPackagesHint": "No variables available",
     "newPackage": "New Variable",
     "nameLabel": "Variable Name",
@@ -146,6 +149,7 @@
   },
   "tag": {
     "title": "Tag Management",
+    "sectionHint": "Tags help you find templates quickly by keyword",
     "newTag": "New Tag",
     "nameLabel": "Tag Name",
     "dragHandleTitle": "Drag to reorder",

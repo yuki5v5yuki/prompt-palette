@@ -443,7 +443,10 @@ export default function VariablePackageManager() {
   return (
     <div className="manager-page">
       <div className="panel-header">
-        <h2 className="panel-title">{t("variablePackage.title")}</h2>
+        <h2 className="panel-title">
+          {t("variablePackage.title")}
+          <span className="info-tooltip" title={t("variablePackage.sectionHint")}><Info size={14} /></span>
+        </h2>
         <button
           className="btn btn-primary btn-sm"
           onClick={() => {

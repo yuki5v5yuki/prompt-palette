@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   DndContext,
@@ -155,7 +156,10 @@ export default function TagManager() {
   return (
     <div className="manager-page">
       <div className="panel-header">
-        <h2 className="panel-title">{t("tag.title")}</h2>
+        <h2 className="panel-title">
+          {t("tag.title")}
+          <span className="info-tooltip" title={t("tag.sectionHint")}><Info size={14} /></span>
+        </h2>
         <button
           className="btn btn-primary btn-sm"
           onClick={() => setIsCreating(true)}
