@@ -310,7 +310,10 @@ function ImportPanel() {
         {fileName ? (
           <span className="ie-dropzone-file">{fileName}</span>
         ) : (
-          <span className="ie-dropzone-text">{t("importExport.dropzoneText")}</span>
+          <>
+            <span className="ie-dropzone-text">{t("importExport.dropzoneText")}</span>
+            <span className="ie-hint">{t("importExport.importFormatHint")}</span>
+          </>
         )}
       </div>
 

@@ -175,6 +175,7 @@
     "exportAllHint": "If none selected, all templates will be exported",
     "exportSuccess": "Export completed successfully",
     "dropzoneText": "Drop a file here, or click to browse",
+    "importFormatHint": "Please upload a JSON file (.ppb.json / .json).",
     "invalidBundle": "Invalid bundle file",
     "previewTemplates": "Templates",
     "previewCategories": "Categories",

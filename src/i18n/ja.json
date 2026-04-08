@@ -175,6 +175,7 @@
     "exportAllHint": "未選択の場合、全テンプレートをエクスポートします",
     "exportSuccess": "エクスポートが完了しました",
     "dropzoneText": "ここにファイルをドロップ、またはクリックして選択",
+    "importFormatHint": "JSON形式（.ppb.json / .json）のファイルをアップロードしてください",
     "invalidBundle": "無効なバンドルファイルです",
     "previewTemplates": "テンプレート",
     "previewCategories": "カテゴリ",
