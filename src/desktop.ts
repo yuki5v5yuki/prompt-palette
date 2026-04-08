@@ -179,6 +179,11 @@ export const previewImport = (bundleJson: string) =>
 export const importBundle = (request: ImportRequest) =>
   invokeCommand<ImportResult>("import_bundle", { request });
 
+// --- File Write (for export) ---
+
+export const writeFile = (path: string, contents: string) =>
+  invokeCommand<void>("write_file", { path, contents });
+
 // --- Settings ---
 
 export const getSetting = (key: string) =>

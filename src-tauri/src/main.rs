@@ -18,6 +18,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let handle = app.handle().clone();
             db::initialize(&handle)?;
@@ -163,6 +164,8 @@ fn main() {
             commands::export_bundle,
             commands::preview_import,
             commands::import_bundle,
+            // File Write (for export)
+            commands::write_file,
             // Paste
             paste::paste_template,
             // Settings

@@ -1315,6 +1315,13 @@ pub(crate) fn toggle_launcher(app: &tauri::AppHandle) {
     }
 }
 
+// ─── File Write (for export) ───
+
+#[tauri::command]
+pub fn write_file(path: String, contents: String) -> Result<(), String> {
+    std::fs::write(&path, &contents).map_err(|e| format!("Failed to write file: {}", e))
+}
+
 // ─── Settings ───
 
 #[tauri::command]

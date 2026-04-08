@@ -4,6 +4,7 @@ import {
   listTemplates,
   listCategories,
   exportBundle,
+  writeFile,
   previewImport,
   importBundle,
 } from "../desktop";
@@ -102,15 +103,21 @@ function ExportPanel() {
       });
       if (bundle.ok && bundle.data) {
         const json = JSON.stringify(bundle.data, null, 2);
-        // Download as file
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${packName.trim().replace(/\s+/g, "-")}.ppb.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setResult(t("importExport.exportSuccess"));
+        const { save } = await import("@tauri-apps/plugin-dialog");
+        const filePath = await save({
+          defaultPath: `${packName.trim().replace(/\s+/g, "-")}.ppb.json`,
+          filters: [{ name: "Prompt Palette Bundle", extensions: ["ppb.json", "json"] }],
+        });
+        if (!filePath) {
+          setExporting(false);
+          return;
+        }
+        const writeResult = await writeFile(filePath, json);
+        if (writeResult.ok) {
+          setResult(t("importExport.exportSuccess"));
+        } else {
+          setResult(t("toast.saveFailed"));
+        }
       } else {
         setResult(t("toast.saveFailed"));
       }
