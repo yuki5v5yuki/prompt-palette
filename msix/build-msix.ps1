@@ -60,14 +60,18 @@ Get-ChildItem -Path $ExtractDir -Recurse -File | Where-Object {
 
 # Tauri のリソースファイルもコピー（存在する場合）
 $ResourceDirs = Get-ChildItem -Path $ExtractDir -Recurse -Directory -ErrorAction SilentlyContinue
-foreach ($dir in $ResourceDirs) {
-    if ($dir.Name -eq "_up_") { continue }
-    $files = Get-ChildItem -Path $dir.FullName -File -ErrorAction SilentlyContinue
-    foreach ($f in $files) {
-        if ($f.Extension -notin '.exe', '.dll', '.msi') {
-            $dest = Join-Path $MsixContent $f.Name
-            if (-not (Test-Path $dest)) {
-                Copy-Item $f.FullName -Destination $dest
+if ($ResourceDirs) {
+    foreach ($dir in $ResourceDirs) {
+        if ($dir.Name -eq "_up_") { continue }
+        if (-not $dir.FullName) { continue }
+        $files = Get-ChildItem -Path $dir.FullName -File -ErrorAction SilentlyContinue
+        if (-not $files) { continue }
+        foreach ($f in $files) {
+            if ($f.Extension -notin '.exe', '.dll', '.msi') {
+                $dest = Join-Path $MsixContent $f.Name
+                if (-not (Test-Path $dest)) {
+                    Copy-Item $f.FullName -Destination $dest
+                }
             }
         }
     }
