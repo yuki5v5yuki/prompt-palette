@@ -984,7 +984,7 @@ pub fn export_bundle(app: AppHandle, request: ExportRequest) -> Result<Bundle, S
         result
     };
 
-    Ok(Bundle {
+    let bundle = Bundle {
         format: "prompt-palette-bundle".into(),
         version: "1.0.0".into(),
         exported_at: chrono::Utc::now().to_rfc3339(),
@@ -996,7 +996,8 @@ pub fn export_bundle(app: AppHandle, request: ExportRequest) -> Result<Bundle, S
             variable_packages: bundle_packages,
             templates: bundle_templates,
         },
-    })
+    };
+    Ok(bundle)
 }
 
 /// Preview what an import will do (detect conflicts).
