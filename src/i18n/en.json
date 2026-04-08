@@ -164,6 +164,7 @@
     "import": "Import",
     "packName": "Pack Name",
     "packNamePlaceholder": "Enter pack name",
+    "packNameRequired": "Pack name is required",
     "packDescription": "Description",
     "packDescriptionPlaceholder": "Pack description (optional)",
     "selectTemplates": "Templates to export",

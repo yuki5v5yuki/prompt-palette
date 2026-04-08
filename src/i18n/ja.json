@@ -164,6 +164,7 @@
     "import": "インポート",
     "packName": "パック名",
     "packNamePlaceholder": "パック名を入力",
+    "packNameRequired": "パック名は必須です",
     "packDescription": "説明",
     "packDescriptionPlaceholder": "パックの説明（省略可）",
     "selectTemplates": "エクスポートするテンプレート",

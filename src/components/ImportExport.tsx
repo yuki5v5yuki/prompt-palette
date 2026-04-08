@@ -59,6 +59,7 @@ function ExportPanel() {
   const [loaded, setLoaded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [packNameError, setPackNameError] = useState<string | null>(null);
 
   const load = async () => {
     const tpls = await listTemplates();
@@ -92,7 +93,11 @@ function ExportPanel() {
   };
 
   const handleExport = async () => {
-    if (!packName.trim()) return;
+    if (!packName.trim()) {
+      setPackNameError(t("importExport.packNameRequired"));
+      return;
+    }
+    setPackNameError(null);
     setExporting(true);
     setResult(null);
     try {
@@ -139,9 +144,17 @@ function ExportPanel() {
         <input
           className="form-input"
           value={packName}
-          onChange={(e) => setPackName(e.target.value)}
+          onChange={(e) => {
+            setPackName(e.target.value);
+            if (e.target.value.trim()) {
+              setPackNameError(null);
+            }
+          }}
           placeholder={t("importExport.packNamePlaceholder")}
+          required
+          aria-invalid={!!packNameError}
         />
+        {packNameError && <div className="ie-result ie-result-error">{packNameError}</div>}
       </div>
       <div className="form-group">
         <label className="form-label">{t("importExport.packDescription")}</label>
@@ -195,7 +208,7 @@ function ExportPanel() {
         <button
           className="btn btn-primary"
           onClick={handleExport}
-          disabled={exporting || !packName.trim()}
+          disabled={exporting}
         >
           {exporting ? t("importExport.exporting") : t("importExport.exportBtn")}
         </button>
