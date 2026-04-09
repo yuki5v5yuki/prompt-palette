@@ -4,6 +4,12 @@
 
 グローバルホットキーで呼び出し、登録済みのテンプレート/プロンプトを検索・選択し、変数を埋めた完成テキストを現在フォーカス中の入力欄に自動ペーストするデスクトップアプリ。
 
+## インストール
+
+<a href="https://apps.microsoft.com/detail/9NQ19JRTMPC1">
+  <img src="https://get.microsoft.com/images/ja-jp%20dark.svg" alt="Microsoft Store からダウンロード" width="200"/>
+</a>
+
 ## 特徴
 
 - **どこでも動く** — ブラウザ、メモ帳、Excel、Slack等、OS上のあらゆる入力欄で使用可能
