@@ -16,6 +16,13 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(main_win) = app.get_webview_window("main") {
+                let _ = main_win.show();
+                let _ = main_win.unminimize();
+                let _ = main_win.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -173,7 +180,22 @@ fn main() {
             commands::set_setting,
             commands::set_global_hotkey,
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run Prompt Palette");
+        .build(tauri::generate_context!())
+        .expect("failed to build Prompt Palette")
+        .run(|app, event| {
+            if let tauri::RunEvent::WindowEvent {
+                label,
+                event: tauri::WindowEvent::CloseRequested { api, .. },
+                ..
+            } = event
+            {
+                if label == "main" {
+                    api.prevent_close();
+                    if let Some(win) = app.get_webview_window("main") {
+                        let _ = win.hide();
+                    }
+                }
+            }
+        });
 }
 
