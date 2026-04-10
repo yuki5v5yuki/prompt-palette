@@ -143,6 +143,7 @@
     "requiredError": "必須項目を入力してください",
     "templatePreviewLabel": "プレビュー：",
     "allCategories": "すべて",
+    "uncategorized": "未分類",
     "hintClose": "閉じる",
     "hintNavigate": "選択",
     "hintSelect": "決定"

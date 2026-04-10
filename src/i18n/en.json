@@ -143,6 +143,7 @@
     "requiredError": "Please fill in required fields",
     "templatePreviewLabel": "Preview:",
     "allCategories": "All",
+    "uncategorized": "Uncategorized",
     "hintClose": "Close",
     "hintNavigate": "Navigate",
     "hintSelect": "Select"

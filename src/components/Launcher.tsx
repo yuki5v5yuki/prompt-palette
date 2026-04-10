@@ -14,6 +14,8 @@ import {
   pasteTemplate,
 } from "../desktop";
 
+const UNCATEGORIZED = "__uncategorized__";
+
 const fuseOptions = {
   keys: [
     { name: "title", weight: 1.0 },
@@ -127,6 +129,14 @@ export default function Launcher() {
     return () => { unlisten.then((fn) => fn()); };
   }, [t]);
 
+  // Listen for template/category changes from main window
+  useEffect(() => {
+    const unlisten = listen("templates-changed", () => {
+      loadTemplates();
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [loadTemplates]);
+
   useEffect(() => {
     if (!query.trim()) {
       setResults(templates);
@@ -164,6 +174,9 @@ export default function Launcher() {
   // Filter results by selected category
   const displayedResults = useMemo(() => {
     if (selectedCategoryId === null) return results;
+    if (selectedCategoryId === UNCATEGORIZED) {
+      return results.filter((t) => !t.categoryId);
+    }
     return results.filter((t) => t.categoryId === selectedCategoryId);
   }, [results, selectedCategoryId]);
 
@@ -416,6 +429,17 @@ export default function Launcher() {
                 {cat.name}
               </button>
             ))}
+            {templates.some((t) => !t.categoryId) && (
+              <button
+                className={`launcher-category-chip ${selectedCategoryId === UNCATEGORIZED ? "active" : ""}`}
+                onClick={() => { setSelectedCategoryId(UNCATEGORIZED); setSelectedIndex(0); }}
+              >
+                <span className="launcher-category-icon">
+                  <CategoryIcon name="folder" size={13} />
+                </span>
+                {t("launcher.uncategorized")}
+              </button>
+            )}
           </div>
         )}
         <div className="launcher-results" ref={listRef}>

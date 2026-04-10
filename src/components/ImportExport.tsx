@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { emitTo } from "@tauri-apps/api/event";
 import {
   listTemplates,
   listCategories,
@@ -273,6 +274,7 @@ function ImportPanel() {
       });
       if (res.ok && res.data) {
         setResult(res.data);
+        emitTo("launcher", "templates-changed", null);
       } else {
         showToast(t("toast.saveFailed"), "error");
       }

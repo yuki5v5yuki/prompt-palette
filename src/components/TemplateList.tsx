@@ -43,6 +43,7 @@ import {
 } from "../desktop";
 import TemplateEditor from "./TemplateEditor";
 import { useToast } from "./Toast";
+import { emitTo } from "@tauri-apps/api/event";
 
 type SortMode = "default" | "frequency" | "recent" | "name";
 
@@ -384,6 +385,7 @@ export default function TemplateList() {
     resetCategoryForm();
     showToast(t("toast.categorySaved"), "success");
     await reload();
+    notifyLauncher();
   };
 
   const handleDeleteCategory = async (id: string) => {
@@ -401,6 +403,7 @@ export default function TemplateList() {
     if (editingCategoryId === id) resetCategoryForm();
     showToast(t("toast.categoryDeleted"), "success");
     await reload();
+    notifyLauncher();
   };
 
   const handleCategoryFormChange = (field: string, value: string) => {
@@ -425,6 +428,10 @@ export default function TemplateList() {
     setTags(tgs.ok ? (tgs.data ?? []) : []);
   }, [showToast, t]);
 
+  const notifyLauncher = useCallback(() => {
+    emitTo("launcher", "templates-changed", null);
+  }, []);
+
   useEffect(() => {
     reload();
   }, [reload]);
@@ -440,6 +447,7 @@ export default function TemplateList() {
     }
     setIsCreating(false);
     await reload();
+    notifyLauncher();
   };
 
   const handleUpdate = async (id: string, input: UpdateTemplateInput) => {
@@ -450,6 +458,7 @@ export default function TemplateList() {
       showToast(t("toast.saveFailed"), "error");
     }
     await reload();
+    notifyLauncher();
   };
 
   const handleDuplicate = async (tpl: TemplateWithTags) => {
@@ -465,6 +474,7 @@ export default function TemplateList() {
       setSelectedId(result.data.id);
     }
     await reload();
+    notifyLauncher();
   };
 
   const handleDelete = async (id: string) => {
@@ -477,6 +487,7 @@ export default function TemplateList() {
     setSelectedId(null);
     showToast(t("toast.templateDeleted"), "success");
     await reload();
+    notifyLauncher();
   };
 
   // ─── Fuse.js search ───
@@ -672,6 +683,7 @@ export default function TemplateList() {
       for (let i = 0; i < reorderedCats.length; i++) {
         updateCategory(reorderedCats[i].id, { sortOrder: i });
       }
+      notifyLauncher();
       return;
     }
 
@@ -723,6 +735,7 @@ export default function TemplateList() {
         for (let i = 0; i < reordered.length; i++) {
           updateTemplate(reordered[i].id, { sortOrder: i });
         }
+        notifyLauncher();
         return;
       }
 
@@ -782,8 +795,9 @@ export default function TemplateList() {
           updateTemplate(sourceTpls[i].id, { sortOrder: i });
         }
       }
+      notifyLauncher();
     }
-  }, [categoryIds, categories, templates, groups, sortMode]);
+  }, [categoryIds, categories, templates, groups, sortMode, notifyLauncher]);
 
   return (
     <div className="template-page">
