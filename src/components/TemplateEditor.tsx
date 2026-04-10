@@ -402,7 +402,7 @@ export default function TemplateEditor({
             <option value="">{t("template.noCategory")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.icon ? `${c.icon} ` : ""}{c.name}
+                {c.name}
               </option>
             ))}
           </select>
