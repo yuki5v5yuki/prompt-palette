@@ -40,6 +40,8 @@
     "bodyHint": "Use curly-brace variables like \u007B\u007Bname\u007D\u007D as fillable fields",
     "tagPickerToggle": "Select tags",
     "tagSearch": "Search tags...",
+    "tagCreate": "Create \"{{name}}\"",
+    "tagCreating": "Creating...",
     "noCategory": "None",
     "useCount": "Use Count",
     "lastUsed": "Last Used",

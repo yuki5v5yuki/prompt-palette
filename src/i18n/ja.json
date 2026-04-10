@@ -40,6 +40,8 @@
     "bodyHint": "\u007B\u007B変数名\u007D\u007D で使用時の入力欄を作れます",
     "tagPickerToggle": "タグを選択",
     "tagSearch": "タグを検索...",
+    "tagCreate": "「{{name}}」を作成",
+    "tagCreating": "作成中...",
     "noCategory": "なし",
     "useCount": "使用回数",
     "lastUsed": "最終使用",

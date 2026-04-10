@@ -738,6 +738,32 @@ body {
   background: var(--text-muted);
 }
 
+.tag-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 6px 10px;
+  margin-top: 6px;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tag-create-btn:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.tag-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ─── Inline Form ─── */
 
 .inline-form {

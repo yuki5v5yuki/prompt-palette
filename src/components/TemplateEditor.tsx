@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, Plus, Info, X } from "lucide-react";
 import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
-import { listVariablePackages, listVariables } from "../desktop";
+import { listVariablePackages, listVariables, createTag } from "../desktop";
 
 interface TemplateEditorProps {
   template?: TemplateWithTags;
@@ -12,6 +12,7 @@ interface TemplateEditorProps {
   onDelete?: () => void;
   onDuplicate?: () => void;
   onCancel: () => void;
+  onTagCreated?: (tag: Tag) => void;
 }
 
 const BUILTIN_VARS = [
@@ -71,6 +72,7 @@ export default function TemplateEditor({
   onDelete,
   onDuplicate,
   onCancel,
+  onTagCreated,
 }: TemplateEditorProps) {
   const { t } = useTranslation();
   const isEditing = !!template;
@@ -92,6 +94,7 @@ export default function TemplateEditor({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [tagFilter, setTagFilter] = useState("");
   const [tagPickerExpanded, setTagPickerExpanded] = useState(false);
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -138,6 +141,23 @@ export default function TemplateEditor({
       }
       return next;
     });
+  };
+
+  const handleCreateTag = async () => {
+    const name = tagFilter.trim();
+    if (!name || isCreatingTag) return;
+    setIsCreatingTag(true);
+    try {
+      const result = await createTag({ name });
+      if (result.ok && result.data) {
+        const newTag = result.data;
+        setSelectedTagIds((prev) => new Set(prev).add(newTag.id));
+        onTagCreated?.(newTag);
+        setTagFilter("");
+      }
+    } finally {
+      setIsCreatingTag(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -409,23 +429,70 @@ export default function TemplateEditor({
         </div>
       </div>
 
-      {tags.length > 0 && (
-        <div className="form-group tag-picker-group">
-          <label className="form-label">
-            {t("template.tagsLabel")}
-            <span className="info-tooltip" title={t("template.tagsHint")}><Info size={12} /></span>
-          </label>
+      <div className="form-group tag-picker-group">
+        <label className="form-label">
+          {t("template.tagsLabel")}
+          <span className="info-tooltip" title={t("template.tagsHint")}><Info size={12} /></span>
+        </label>
 
-          {tags.some((tag) => selectedTagIds.has(tag.id)) && (
-            <div className="tag-picker-selected">
+        {tags.some((tag) => selectedTagIds.has(tag.id)) && (
+          <div className="tag-picker-selected">
+            <div className="tag-selector">
+              {tags
+                .filter((tag) => selectedTagIds.has(tag.id))
+                .map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className="tag-toggle active"
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="variable-palette-toggle tag-picker-toggle"
+          onClick={() => setTagPickerExpanded(!tagPickerExpanded)}
+        >
+          <Plus size={14} />
+          {t("template.tagPickerToggle")}
+          {tagPickerExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {tagPickerExpanded && (
+          <div className="variable-palette-expanded tag-picker-expanded">
+            <input
+              type="text"
+              className="form-input tag-search-input"
+              placeholder={t("template.tagSearch")}
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+            />
+            <div className="tag-picker-scroll">
               <div className="tag-selector">
                 {tags
-                  .filter((tag) => selectedTagIds.has(tag.id))
+                  .filter((tag) => {
+                    if (!tagFilter) return true;
+                    return (
+                      tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
+                      selectedTagIds.has(tag.id)
+                    );
+                  })
+                  .sort((a, b) => {
+                    const aSelected = selectedTagIds.has(a.id) ? 0 : 1;
+                    const bSelected = selectedTagIds.has(b.id) ? 0 : 1;
+                    return aSelected - bSelected;
+                  })
                   .map((tag) => (
                     <button
                       key={tag.id}
                       type="button"
-                      className="tag-toggle active"
+                      className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
                       onClick={() => toggleTag(tag.id)}
                     >
                       {tag.name}
@@ -433,58 +500,23 @@ export default function TemplateEditor({
                   ))}
               </div>
             </div>
-          )}
-
-          <button
-            type="button"
-            className="variable-palette-toggle tag-picker-toggle"
-            onClick={() => setTagPickerExpanded(!tagPickerExpanded)}
-          >
-            <Plus size={14} />
-            {t("template.tagPickerToggle")}
-            {tagPickerExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </button>
-
-          {tagPickerExpanded && (
-            <div className="variable-palette-expanded tag-picker-expanded">
-              <input
-                type="text"
-                className="form-input tag-search-input"
-                placeholder={t("template.tagSearch")}
-                value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value)}
-              />
-              <div className="tag-picker-scroll">
-                <div className="tag-selector">
-                  {tags
-                    .filter((tag) => {
-                      if (!tagFilter) return true;
-                      return (
-                        tag.name.toLowerCase().includes(tagFilter.toLowerCase()) ||
-                        selectedTagIds.has(tag.id)
-                      );
-                    })
-                    .sort((a, b) => {
-                      const aSelected = selectedTagIds.has(a.id) ? 0 : 1;
-                      const bSelected = selectedTagIds.has(b.id) ? 0 : 1;
-                      return aSelected - bSelected;
-                    })
-                    .map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        className={`tag-toggle ${selectedTagIds.has(tag.id) ? "active" : ""}`}
-                        onClick={() => toggleTag(tag.id)}
-                      >
-                        {tag.name}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            {tagFilter.trim() &&
+              !tags.some((tag) => tag.name.toLowerCase() === tagFilter.trim().toLowerCase()) && (
+              <button
+                type="button"
+                className="tag-create-btn"
+                disabled={isCreatingTag}
+                onClick={handleCreateTag}
+              >
+                <Plus size={14} />
+                {isCreatingTag
+                  ? t("template.tagCreating")
+                  : t("template.tagCreate", { name: tagFilter.trim() })}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Body Editing Area - palette + textarea + preview */}
       <div className="form-group">

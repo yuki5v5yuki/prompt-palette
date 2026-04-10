@@ -958,6 +958,7 @@ export default function TemplateList() {
             tags={tags}
             onSave={(data) => handleCreate(data as CreateTemplateInput)}
             onCancel={() => setIsCreating(false)}
+            onTagCreated={(tag) => setTags((prev) => [...prev, tag])}
           />
         ) : selectedTemplate ? (
           <TemplateEditor
@@ -971,6 +972,7 @@ export default function TemplateList() {
             onDelete={() => handleDelete(selectedTemplate.id)}
             onDuplicate={() => handleDuplicate(selectedTemplate)}
             onCancel={() => setSelectedId(null)}
+            onTagCreated={(tag) => setTags((prev) => [...prev, tag])}
           />
         ) : (
           <div className="editor-empty">
