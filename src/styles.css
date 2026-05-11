@@ -1317,6 +1317,60 @@ body {
   padding: 6px 10px;
 }
 
+.inline-variable-create {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variable-create-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s);
+}
+
+.variable-create-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent-text, #8b7500);
+  background: var(--accent-light);
+}
+
+.inline-variable-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+}
+
+.inline-variable-form .form-group {
+  margin-bottom: 0;
+}
+
+.inline-variable-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inline-variable-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  align-items: center;
+}
+
 .variable-group {
   display: flex;
   flex-direction: column;

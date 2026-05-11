@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, Plus, Info, X } from "lucide-react";
 import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
-import { listVariablePackages, listVariables, createTag } from "../desktop";
+import { listVariablePackages, listVariables, createTag, createVariablePackage, createVariable, deleteVariablePackage } from "../desktop";
+import { useToast } from "./Toast";
 
 interface TemplateEditorProps {
   template?: TemplateWithTags;
@@ -75,6 +76,7 @@ export default function TemplateEditor({
   onTagCreated,
 }: TemplateEditorProps) {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const isEditing = !!template;
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalEdit = useRef(false);
@@ -95,6 +97,13 @@ export default function TemplateEditor({
   const [tagFilter, setTagFilter] = useState("");
   const [tagPickerExpanded, setTagPickerExpanded] = useState(false);
   const [isCreatingTag, setIsCreatingTag] = useState(false);
+  const [isCreatingVariable, setIsCreatingVariable] = useState(false);
+  const [isSavingVariable, setIsSavingVariable] = useState(false);
+  const [newVariableName, setNewVariableName] = useState("");
+  const [newVariableOptions, setNewVariableOptions] = useState<string[]>([]);
+  const [newVariableDefault, setNewVariableDefault] = useState("");
+  const [newVariableAllowFreeText, setNewVariableAllowFreeText] = useState(true);
+  const [newVariableRequired, setNewVariableRequired] = useState(false);
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -157,6 +166,66 @@ export default function TemplateEditor({
       }
     } finally {
       setIsCreatingTag(false);
+    }
+  };
+
+  const resetInlineVariableForm = () => {
+    setIsCreatingVariable(false);
+    setIsSavingVariable(false);
+    setNewVariableName("");
+    setNewVariableOptions([]);
+    setNewVariableDefault("");
+    setNewVariableAllowFreeText(true);
+    setNewVariableRequired(false);
+  };
+
+  const handleCreateInlineVariable = async () => {
+    const trimmed = newVariableName.trim();
+    if (!trimmed || isSavingVariable) return;
+
+    const existingVariable = allVariables.find(
+      (variable) => variable.key.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existingVariable) {
+      insertVariable(existingVariable.key);
+      resetInlineVariableForm();
+      return;
+    }
+
+    setIsSavingVariable(true);
+    try {
+      const packageResult = await createVariablePackage({ name: trimmed });
+      if (!packageResult.ok || !packageResult.data) {
+        showToast(t("toast.saveFailed"), "error");
+        return;
+      }
+
+      const pkg = packageResult.data;
+      const filteredOptions = newVariableOptions.map((value) => value.trim()).filter(Boolean);
+      const variableResult = await createVariable({
+        packageId: pkg.id,
+        key: trimmed,
+        label: trimmed,
+        defaultValue: newVariableDefault.trim() || undefined,
+        options: filteredOptions.length > 0 ? filteredOptions : undefined,
+        allowFreeText: newVariableAllowFreeText,
+        required: newVariableRequired,
+      });
+
+      if (!variableResult.ok || !variableResult.data) {
+        await deleteVariablePackage(pkg.id);
+        showToast(t("toast.saveFailed"), "error");
+        return;
+      }
+
+      const variable = variableResult.data;
+      setAllPackages((prev) => [...prev, pkg]);
+      setAllVariables((prev) => [...prev, variable]);
+      resetInlineVariableForm();
+      requestAnimationFrame(() => insertVariable(variable.key));
+      showToast(t("toast.variableCreated"), "success");
+    } finally {
+      setIsSavingVariable(false);
     }
   };
 
@@ -613,6 +682,153 @@ export default function TemplateEditor({
                 <div className="variable-palette-hint-banner">
                   <Info size={12} />
                   {t("variable.insertHintBanner")}
+                </div>
+
+                <div className="inline-variable-create">
+                  <button
+                    type="button"
+                    className="variable-create-toggle"
+                    onClick={() => {
+                      const next = !isCreatingVariable;
+                      setIsCreatingVariable(next);
+                      if (next && varSearch.trim() && !newVariableName.trim()) {
+                        setNewVariableName(varSearch.trim());
+                      }
+                    }}
+                  >
+                    <Plus size={14} />
+                    {t("variable.createHere")}
+                    {isCreatingVariable ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+
+                  {isCreatingVariable && (
+                    <div className="inline-variable-form">
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label className="form-label">{t("variablePackage.nameLabel")}</label>
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={newVariableName}
+                            onChange={(e) => setNewVariableName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleCreateInlineVariable();
+                              }
+                              if (e.key === "Escape") {
+                                resetInlineVariableForm();
+                              }
+                            }}
+                            placeholder={t("variablePackage.placeholder.name")}
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">{t("variable.optionsLabel")}</label>
+                        <p className="form-hint">{t("variable.optionsHint")}</p>
+                        <div className="option-list">
+                          {newVariableOptions.map((option, index) => (
+                            <div key={index} className="option-item">
+                              <input
+                                type="text"
+                                className="form-input"
+                                value={option}
+                                onChange={(e) => {
+                                  const next = [...newVariableOptions];
+                                  next[index] = e.target.value;
+                                  setNewVariableOptions(next);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") e.preventDefault();
+                                }}
+                                placeholder={`${t("variable.optionsLabel")} ${index + 1}`}
+                              />
+                              <button
+                                type="button"
+                                className="btn-icon btn-icon-danger"
+                                onClick={() => {
+                                  const removed = newVariableOptions[index];
+                                  const next = newVariableOptions.filter((_, i) => i !== index);
+                                  setNewVariableOptions(next);
+                                  if (newVariableDefault === removed.trim()) {
+                                    setNewVariableDefault("");
+                                  }
+                                }}
+                                title={t("common.delete")}
+                              >
+                                x
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            className="option-add-btn"
+                            onClick={() => setNewVariableOptions([...newVariableOptions, ""])}
+                          >
+                            + {t("variable.addOption")}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group form-group-half">
+                          <label className="form-label">{t("variable.defaultLabel")}</label>
+                          <p className="form-hint">{t("variable.defaultHintWithOptions")}</p>
+                          <select
+                            className="form-select"
+                            value={newVariableDefault}
+                            onChange={(e) => setNewVariableDefault(e.target.value)}
+                          >
+                            <option value="">{t("variable.noDefault")}</option>
+                            {newVariableOptions
+                              .map((value) => value.trim())
+                              .filter(Boolean)
+                              .map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="inline-variable-checks">
+                        <label className="option-freetext-check">
+                          <input
+                            type="checkbox"
+                            checked={newVariableAllowFreeText}
+                            onChange={(e) => setNewVariableAllowFreeText(e.target.checked)}
+                          />
+                          {t("variable.allowFreeText")}
+                        </label>
+                        <label className="option-freetext-check">
+                          <input
+                            type="checkbox"
+                            checked={newVariableRequired}
+                            onChange={(e) => setNewVariableRequired(e.target.checked)}
+                          />
+                          {t("variable.required")}
+                        </label>
+                      </div>
+
+                      <div className="inline-variable-actions">
+                        <button type="button" className="btn btn-secondary btn-xs" onClick={resetInlineVariableForm}>
+                          {t("common.cancel")}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-xs"
+                          disabled={!newVariableName.trim() || isSavingVariable}
+                          onClick={handleCreateInlineVariable}
+                        >
+                          {isSavingVariable ? t("variable.creating") : t("variable.createAndInsert")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <input
