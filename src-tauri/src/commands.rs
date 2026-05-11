@@ -1,5 +1,5 @@
 use serde_json::json;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, PhysicalPosition, Position};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -1304,12 +1304,39 @@ pub fn import_bundle(app: AppHandle, request: ImportRequest) -> Result<serde_jso
 
 // ─── Launcher Toggle ───
 
+fn position_launcher_on_cursor_monitor(
+    app: &tauri::AppHandle,
+    launcher: &tauri::WebviewWindow,
+) -> tauri::Result<()> {
+    let cursor = app.cursor_position()?;
+    let monitor = app
+        .monitor_from_point(cursor.x, cursor.y)?
+        .or(app.primary_monitor()?);
+
+    if let Some(monitor) = monitor {
+        let work_area = monitor.work_area();
+        let launcher_size = launcher.outer_size()?;
+        let available_width = work_area.size.width as i32 - launcher_size.width as i32;
+        let available_height = work_area.size.height as i32 - launcher_size.height as i32;
+        let x = work_area.position.x + available_width.max(0) / 2;
+        let y = work_area.position.y + available_height.max(0) / 2;
+
+        launcher.set_position(Position::Physical(PhysicalPosition::new(x, y)))?;
+    } else {
+        launcher.center()?;
+    }
+
+    Ok(())
+}
+
 pub(crate) fn toggle_launcher(app: &tauri::AppHandle) {
     if let Some(launcher) = app.get_webview_window("launcher") {
         if launcher.is_visible().unwrap_or(false) {
             let _ = launcher.hide();
         } else {
-            let _ = launcher.center();
+            if position_launcher_on_cursor_monitor(app, &launcher).is_err() {
+                let _ = launcher.center();
+            }
             let _ = launcher.show();
             let _ = launcher.set_focus();
         }
