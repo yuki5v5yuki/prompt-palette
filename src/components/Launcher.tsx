@@ -180,6 +180,13 @@ export default function Launcher() {
     return results.filter((t) => t.categoryId === selectedCategoryId);
   }, [results, selectedCategoryId]);
 
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (displayedResults.length === 0) return 0;
+      return Math.min(prev, displayedResults.length - 1);
+    });
+  }, [displayedResults.length]);
+
   const resetLauncher = useCallback(() => {
     setStep("search");
     setQuery("");
@@ -443,8 +450,39 @@ export default function Launcher() {
           </div>
         )}
         <div className="launcher-results" ref={listRef}>
+          <div className="launcher-status">
+            <span>
+              {query.trim()
+                ? t("launcher.resultCount", { count: displayedResults.length })
+                : t("launcher.readyCount", { count: displayedResults.length })}
+            </span>
+            {displayedResults[selectedIndex] && (
+              <span className="launcher-status-selected">
+                {t("launcher.selectedHint", { title: displayedResults[selectedIndex].title })}
+              </span>
+            )}
+          </div>
           {displayedResults.length === 0 && (
-            <div className="launcher-empty">{t("launcher.noResults")}</div>
+            <div className="launcher-empty">
+              <div className="launcher-empty-title">{t("launcher.noResultsTitle")}</div>
+              <div className="launcher-empty-detail">
+                {selectedCategoryId === null
+                  ? t("launcher.noResults")
+                  : t("launcher.noResultsWithCategory")}
+              </div>
+              {selectedCategoryId !== null && (
+                <button
+                  type="button"
+                  className="launcher-empty-action"
+                  onClick={() => {
+                    setSelectedCategoryId(null);
+                    setSelectedIndex(0);
+                  }}
+                >
+                  {t("launcher.showAllCategories")}
+                </button>
+              )}
+            </div>
           )}
           {displayedResults.map((tpl, index) => (
             <div
@@ -532,7 +570,17 @@ export default function Launcher() {
         <button className="launcher-back-btn" onClick={resetLauncher}>
           &larr;
         </button>
-        <span className="launcher-var-title">{selectedTemplate?.title}</span>
+        <div className="launcher-var-title-group">
+          <span className="launcher-var-title">{selectedTemplate?.title}</span>
+          {formFields.length > 0 && (
+            <span className="launcher-var-progress">
+              {t("launcher.variableProgress", {
+                current: activeFieldIndex + 1,
+                total: formFields.length,
+              })}
+            </span>
+          )}
+        </div>
       </div>
       {selectedTemplate && (
         <div className="launcher-body-preview">
@@ -632,6 +680,9 @@ export default function Launcher() {
                 onFocus={() => setActiveFieldIndex(idx)}
                 placeholder={field.defaultValue || t("launcher.inputPlaceholder")}
               />
+            )}
+            {validationErrors.has(field.key) && (
+              <div className="launcher-var-error-text">{t("launcher.requiredError")}</div>
             )}
           </div>
         ))}

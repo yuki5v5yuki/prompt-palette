@@ -21,7 +21,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Search, Check, X, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { Search, Check, X, ChevronRight, Pencil, Trash2, FileText, Plus } from "lucide-react";
 import { ICON_MAP, PRESET_ICONS, CategoryIcon } from "./CategoryIcon";
 import type {
   TemplateWithTags,
@@ -301,6 +301,7 @@ export default function TemplateList() {
     return saved ? parseInt(saved, 10) : 320;
   });
   const isResizing = useRef(false);
+  const hasInitializedExpansion = useRef(false);
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -507,6 +508,10 @@ export default function TemplateList() {
     return fuse.search(searchQuery).map((r) => r.item);
   }, [fuse, searchQuery, templates]);
 
+  const hasTemplates = templates.length > 0;
+  const isSearching = searchQuery.trim().length > 0;
+  const hasSearchResults = filteredTemplates.length > 0;
+
   // ─── Sort ───
 
   const sortTemplates = useCallback(
@@ -553,12 +558,22 @@ export default function TemplateList() {
       ? catGroups.filter((g) => g.templates.length > 0)
       : catGroups;
 
-    if (uncategorized.length > 0 || !searchQuery.trim()) {
+    if (uncategorized.length > 0 || (!searchQuery.trim() && categories.length > 0)) {
       nonEmpty.push({ category: null, templates: uncategorized });
     }
 
     return nonEmpty;
   }, [categories, filteredTemplates, sortTemplates, searchQuery]);
+
+  useEffect(() => {
+    if (hasInitializedExpansion.current || isSearching || !hasTemplates) return;
+    const groupsWithTemplates = groups
+      .filter((g) => g.templates.length > 0)
+      .map((g) => g.category?.id ?? "__uncategorized__");
+    if (groupsWithTemplates.length === 0) return;
+    setExpandedCategories(new Set(groupsWithTemplates));
+    hasInitializedExpansion.current = true;
+  }, [groups, hasTemplates, isSearching]);
 
   // Auto-expand all when searching
   const effectiveExpanded = useMemo(() => {
@@ -799,6 +814,14 @@ export default function TemplateList() {
     }
   }, [categoryIds, categories, templates, groups, sortMode, notifyLauncher]);
 
+  const startCreateTemplate = useCallback(() => {
+    setIsCreating(true);
+    setSelectedId(null);
+  }, []);
+
+  const showTemplateEmpty = !hasTemplates && !isCreating && !isCreatingCategory;
+  const showSearchEmpty = hasTemplates && isSearching && !hasSearchResults;
+
   return (
     <div className="template-page">
       {/* Left: Template list */}
@@ -806,13 +829,11 @@ export default function TemplateList() {
         <div className="panel-header">
           <h2 className="panel-title">{t("template.title")}</h2>
           <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              setIsCreating(true);
-              setSelectedId(null);
-            }}
+            className="btn btn-primary btn-sm btn-with-icon"
+            onClick={startCreateTemplate}
           >
-            + {t("template.newTemplate")}
+            <Plus size={14} />
+            {t("template.newTemplate")}
           </button>
         </div>
 
@@ -887,62 +908,88 @@ export default function TemplateList() {
             </div>
           )}
 
-          {groups.length === 0 && !isCreating && (
-            <p className="empty-message">{t("template.empty")}</p>
+          {showTemplateEmpty && (
+            <div className="empty-state">
+              <FileText size={28} className="empty-state-icon" />
+              <h3>{t("template.emptyListTitle")}</h3>
+              <p>{t("template.emptyListDescription")}</p>
+              <ol className="empty-state-steps">
+                <li>{t("template.firstStepCreate")}</li>
+                <li>{t("template.firstStepLaunch")}</li>
+                <li>{t("template.firstStepInsert")}</li>
+              </ol>
+              <button className="btn btn-primary btn-sm btn-with-icon" onClick={startCreateTemplate}>
+                <Plus size={14} />
+                {t("template.newTemplate")}
+              </button>
+            </div>
           )}
 
-          <DndContext
-            sensors={categoryDndSensors}
-            collisionDetection={customCollisionDetection}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleUnifiedDragEnd}
-          >
-            <SortableContext items={[...categoryIds, ...allTemplateIds]} strategy={verticalListSortingStrategy}>
-              {groups.map((group) => {
-                const catId = group.category?.id ?? "__uncategorized__";
-                const isExpanded = effectiveExpanded.has(catId);
+          {showSearchEmpty && (
+            <div className="empty-state">
+              <Search size={28} className="empty-state-icon" />
+              <h3>{t("template.emptySearchTitle")}</h3>
+              <p>{t("template.emptySearchDescription", { query: searchQuery.trim() })}</p>
+              <button className="btn btn-secondary btn-sm" onClick={() => setSearchQuery("")}>
+                {t("template.clearSearch")}
+              </button>
+            </div>
+          )}
 
-                return (
-                  <div key={catId}>
-                    {group.category === null && groups.length > 1 && (
-                      <div className="uncategorized-divider" />
-                    )}
-                    <SortableCategoryItem
-                      group={group}
-                      isExpanded={isExpanded}
-                      onToggle={() => toggleCategory(catId)}
-                      selectedId={selectedId}
-                      onSelect={(id) => {
-                        setSelectedId(id);
-                        setIsCreating(false);
-                      }}
-                      sortMode={sortMode}
-                      isDropTarget={activeType === "template" && overCategoryId === catId}
-                      onEditCategory={startEditCategory}
-                      onDeleteCategory={handleDeleteCategory}
-                      editingCategoryId={editingCategoryId}
-                      categoryForm={{ name: categoryFormName, icon: categoryFormIcon, color: categoryFormColor }}
-                      onCategoryFormChange={handleCategoryFormChange}
-                      onSaveCategory={handleSaveCategory}
-                      onCancelCategoryEdit={resetCategoryForm}
-                    />
+          {!showTemplateEmpty && !showSearchEmpty && (
+            <DndContext
+              sensors={categoryDndSensors}
+              collisionDetection={customCollisionDetection}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleUnifiedDragEnd}
+            >
+              <SortableContext items={[...categoryIds, ...allTemplateIds]} strategy={verticalListSortingStrategy}>
+                {groups.map((group) => {
+                  const catId = group.category?.id ?? "__uncategorized__";
+                  const isExpanded = effectiveExpanded.has(catId);
+
+                  return (
+                    <div key={catId}>
+                      {group.category === null && groups.length > 1 && (
+                        <div className="uncategorized-divider" />
+                      )}
+                      <SortableCategoryItem
+                        group={group}
+                        isExpanded={isExpanded}
+                        onToggle={() => toggleCategory(catId)}
+                        selectedId={selectedId}
+                        onSelect={(id) => {
+                          setSelectedId(id);
+                          setIsCreating(false);
+                        }}
+                        sortMode={sortMode}
+                        isDropTarget={activeType === "template" && overCategoryId === catId}
+                        onEditCategory={startEditCategory}
+                        onDeleteCategory={handleDeleteCategory}
+                        editingCategoryId={editingCategoryId}
+                        categoryForm={{ name: categoryFormName, icon: categoryFormIcon, color: categoryFormColor }}
+                        onCategoryFormChange={handleCategoryFormChange}
+                        onSaveCategory={handleSaveCategory}
+                        onCancelCategoryEdit={resetCategoryForm}
+                      />
+                    </div>
+                  );
+                })}
+              </SortableContext>
+              <DragOverlay>
+                {activeTplData ? (
+                  <div className="template-item drag-overlay">
+                    <div className="template-item-title">{activeTplData.title}</div>
+                    <div className="template-item-body">
+                      {activeTplData.body.slice(0, 60)}
+                      {activeTplData.body.length > 60 ? "..." : ""}
+                    </div>
                   </div>
-                );
-              })}
-            </SortableContext>
-            <DragOverlay>
-              {activeTplData ? (
-                <div className="template-item drag-overlay">
-                  <div className="template-item-title">{activeTplData.title}</div>
-                  <div className="template-item-body">
-                    {activeTplData.body.slice(0, 60)}
-                    {activeTplData.body.length > 60 ? "..." : ""}
-                  </div>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
         </div>
       </div>
 
@@ -976,7 +1023,13 @@ export default function TemplateList() {
           />
         ) : (
           <div className="editor-empty">
-            <p>{t("template.empty")}</p>
+            <FileText size={32} className="empty-state-icon" />
+            <h3>{hasTemplates ? t("template.emptyEditorTitle") : t("template.emptyEditorFirstTitle")}</h3>
+            <p>{hasTemplates ? t("template.emptyEditorDescription") : t("template.emptyEditorFirstDescription")}</p>
+            <button className="btn btn-primary btn-sm btn-with-icon" onClick={startCreateTemplate}>
+              <Plus size={14} />
+              {t("template.newTemplate")}
+            </button>
           </div>
         )}
       </div>

@@ -66,7 +66,7 @@ body {
   height: 100vh;
   overflow: hidden;
   font-size: 13px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -109,13 +109,13 @@ body {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .sidebar-version {
   font-size: 10px;
   color: var(--text-secondary);
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   text-transform: uppercase;
   margin-top: 4px;
   opacity: 0.7;
@@ -234,7 +234,7 @@ body {
 .panel-title {
   font-size: 18px;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 /* ─── Buttons ─── */
@@ -248,7 +248,14 @@ body {
   cursor: pointer;
   transition: all var(--transition-normal);
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+}
+
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .btn:active {
@@ -339,6 +346,20 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+}
+
+.template-list-panel .panel-header {
+  padding: 16px 12px;
+  gap: 8px;
+}
+
+.template-list-panel .panel-title {
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.template-list-panel .panel-header .btn-sm {
+  padding-inline: 10px;
 }
 
 .pane-resizer {
@@ -484,11 +505,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 10px;
   height: 100%;
   color: var(--text-secondary);
   font-size: 14px;
-  opacity: 0.6;
-  letter-spacing: -0.01em;
+  text-align: center;
+  padding: 32px;
+  letter-spacing: 0;
+}
+
+.editor-empty h3 {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.editor-empty p {
+  max-width: 320px;
+  line-height: 1.6;
 }
 
 .editor-meta {
@@ -847,6 +882,45 @@ body {
   text-align: center;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-state-icon {
+  color: var(--accent-text);
+  opacity: 0.9;
+}
+
+.empty-state h3 {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.empty-state p {
+  max-width: 260px;
+  line-height: 1.6;
+  font-size: 12px;
+}
+
+.empty-state-steps {
+  display: grid;
+  gap: 6px;
+  width: min(260px, 100%);
+  margin: 4px 0 6px;
+  padding-left: 18px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* ─── Variable Section (TemplateEditor) ─── */
@@ -2269,7 +2343,7 @@ body {
   font-size: 28px;
   font-weight: 700;
   margin-bottom: 12px;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
 }
 
 .onboarding-desc {
