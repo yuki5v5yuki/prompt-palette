@@ -8,6 +8,7 @@
     "core:window:default",
     "core:window:allow-hide",
     "core:window:allow-is-visible",
+    "core:window:allow-set-size",
     "clipboard-manager:default",
     "clipboard-manager:allow-write-text",
     "clipboard-manager:allow-read-text"

@@ -15,6 +15,9 @@ import {
 } from "../desktop";
 
 const UNCATEGORIZED = "__uncategorized__";
+const LAUNCHER_WIDTH = 600;
+const LAUNCHER_MIN_HEIGHT = 220;
+const LAUNCHER_MAX_HEIGHT = 480;
 
 const fuseOptions = {
   keys: [
@@ -51,6 +54,8 @@ export default function Launcher() {
   const [results, setResults] = useState<TemplateWithTags[]>([]);
   const [matchMap, setMatchMap] = useState<Map<string, FuseResultMatch[]>>(new Map());
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const launcherRef = useRef<HTMLDivElement>(null);
+  const lastLauncherHeightRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const fuseRef = useRef<Fuse<TemplateWithTags> | null>(null);
@@ -69,6 +74,31 @@ export default function Launcher() {
   const formRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pasteWarning, setPasteWarning] = useState<string | null>(null);
+
+  const resizeLauncherToContent = useCallback(async () => {
+    const launcher = launcherRef.current;
+    if (!launcher) return;
+
+    const nextHeight = Math.max(
+      LAUNCHER_MIN_HEIGHT,
+      Math.min(
+        LAUNCHER_MAX_HEIGHT,
+        Math.ceil(launcher.scrollHeight)
+      )
+    );
+    if (Math.abs(lastLauncherHeightRef.current - nextHeight) < 2) return;
+    lastLauncherHeightRef.current = nextHeight;
+
+    try {
+      const [{ getCurrentWindow }, { LogicalSize }] = await Promise.all([
+        import("@tauri-apps/api/window"),
+        import("@tauri-apps/api/dpi"),
+      ]);
+      await getCurrentWindow().setSize(new LogicalSize(LAUNCHER_WIDTH, nextHeight));
+    } catch (e) {
+      console.error("[Launcher] resize failed:", e);
+    }
+  }, []);
 
   const loadTemplates = useCallback(async () => {
     setLoadError(null);
@@ -179,6 +209,38 @@ export default function Launcher() {
     }
     return results.filter((t) => t.categoryId === selectedCategoryId);
   }, [results, selectedCategoryId]);
+
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      void resizeLauncherToContent();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [
+    resizeLauncherToContent,
+    step,
+    displayedResults.length,
+    categories.length,
+    selectedCategoryId,
+    query,
+    loadError,
+    pasteWarning,
+    formFields.length,
+    activeFieldIndex,
+    validationErrors.size,
+    comboFreeText,
+    selectedTemplate?.id,
+  ]);
+
+  useEffect(() => {
+    const launcher = launcherRef.current;
+    if (!launcher || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      void resizeLauncherToContent();
+    });
+    observer.observe(launcher);
+    return () => observer.disconnect();
+  }, [resizeLauncherToContent, step]);
 
   useEffect(() => {
     setSelectedIndex((prev) => {
@@ -389,7 +451,7 @@ export default function Launcher() {
   // --- Search Step ---
   if (step === "search") {
     return (
-      <div className="launcher" onKeyDown={handleSearchKeyDown}>
+      <div ref={launcherRef} className="launcher" onKeyDown={handleSearchKeyDown}>
         {loadError && (
           <div className="launcher-banner launcher-banner-error" role="alert">
             <span>{loadError}</span>
@@ -560,7 +622,7 @@ export default function Launcher() {
   };
 
   return (
-    <div className="launcher" onKeyDown={handleVariableKeyDown}>
+    <div ref={launcherRef} className="launcher" onKeyDown={handleVariableKeyDown}>
       {pasteWarning && (
         <div className="launcher-banner launcher-banner-warn" role="status">
           {pasteWarning}
