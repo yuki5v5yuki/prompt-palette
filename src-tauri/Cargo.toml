@@ -1,6 +1,6 @@
 [package]
 name = "prompt-palette"
-version = "0.1.1"
+version = "0.2.1"
 description = "Prompt Palette - global text insertion launcher"
 authors = ["yuki5"]
 edition = "2021"
