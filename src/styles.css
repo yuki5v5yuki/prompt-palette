@@ -666,8 +666,13 @@ body {
   line-height: 1.4;
   vertical-align: baseline;
   user-select: all;
-  cursor: default;
+  cursor: pointer;
   transition: background var(--transition-fast, 0.15s), border-color var(--transition-fast, 0.15s);
+}
+
+.ce-chip:hover {
+  background: var(--accent);
+  color: #1a1a00;
 }
 
 .ce-chip-highlight {
@@ -1369,6 +1374,131 @@ body {
   justify-content: flex-end;
   gap: 6px;
   align-items: center;
+}
+
+.template-input-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-secondary);
+}
+
+.template-input-fields-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.template-input-fields-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.template-input-fields-count {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.template-input-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.template-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-primary);
+}
+
+.template-input-field.is-editing {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.template-input-field-muted {
+  opacity: 0.82;
+}
+
+.template-input-field-missing {
+  border-style: dashed;
+}
+
+.template-input-field-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.template-input-field-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.template-input-field-main-button {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.template-input-field-main-button:hover .template-input-field-name {
+  color: var(--accent-text, #8b7500);
+}
+
+.template-input-field-name {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-input-field-key {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.template-input-field-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.template-input-field-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.template-input-field-edit .form-group {
+  margin-bottom: 0;
 }
 
 .variable-group {

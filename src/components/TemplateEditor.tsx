@@ -1,8 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, Plus, Info, X } from "lucide-react";
+import { ChevronRight, ChevronDown, ChevronUp, CheckCircle, Plus, Info, X, Settings2 } from "lucide-react";
 import type { TemplateWithTags, Category, Tag, Variable, VariablePackage, CreateTemplateInput, UpdateTemplateInput } from "../types";
-import { listVariablePackages, listVariables, createTag, createVariablePackage, createVariable, deleteVariablePackage } from "../desktop";
+import {
+  listVariablePackages,
+  listVariables,
+  createTag,
+  createVariablePackage,
+  updateVariablePackage,
+  createVariable,
+  updateVariable,
+  deleteVariablePackage,
+} from "../desktop";
 import { useToast } from "./Toast";
 
 interface TemplateEditorProps {
@@ -104,6 +113,14 @@ export default function TemplateEditor({
   const [newVariableDefault, setNewVariableDefault] = useState("");
   const [newVariableAllowFreeText, setNewVariableAllowFreeText] = useState(true);
   const [newVariableRequired, setNewVariableRequired] = useState(false);
+  const [editingVariableId, setEditingVariableId] = useState<string | null>(null);
+  const [editVariableName, setEditVariableName] = useState("");
+  const [editVariableDefault, setEditVariableDefault] = useState("");
+  const [editVariableOptions, setEditVariableOptions] = useState<string[]>([]);
+  const [editVariableAllowFreeText, setEditVariableAllowFreeText] = useState(true);
+  const [editVariableRequired, setEditVariableRequired] = useState(false);
+  const [isSavingField, setIsSavingField] = useState(false);
+  const [creatingToken, setCreatingToken] = useState<string | null>(null);
 
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -112,6 +129,9 @@ export default function TemplateEditor({
   const bodyTokens = (body.match(/\{\{([^}]+)\}\}/g) || [])
     .map((m) => m.slice(2, -2))
     .filter((v, i, a) => a.indexOf(v) === i);
+  const editingVariable = editingVariableId
+    ? allVariables.find((variable) => variable.id === editingVariableId) ?? null
+    : null;
 
   // Load all packages
   useEffect(() => {
@@ -226,6 +246,133 @@ export default function TemplateEditor({
       showToast(t("toast.variableCreated"), "success");
     } finally {
       setIsSavingVariable(false);
+    }
+  };
+
+  const startEditVariable = (variable: Variable) => {
+    setEditingVariableId(variable.id);
+    setEditVariableName(variable.label || variable.key);
+    setEditVariableDefault(variable.defaultValue ?? "");
+    setEditVariableOptions(variable.options ?? []);
+    setEditVariableAllowFreeText(variable.allowFreeText);
+    setEditVariableRequired(variable.required);
+    setHighlightKey(variable.key);
+  };
+
+  const resetVariableEdit = () => {
+    setEditingVariableId(null);
+    setEditVariableName("");
+    setEditVariableDefault("");
+    setEditVariableOptions([]);
+    setEditVariableAllowFreeText(true);
+    setEditVariableRequired(false);
+    setHighlightKey(null);
+  };
+
+  const handleCreateVariableFromToken = async (token: string) => {
+    const trimmed = token.trim();
+    if (!trimmed || creatingToken) return;
+
+    const existingVariable = allVariables.find(
+      (variable) => variable.key.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existingVariable) {
+      startEditVariable(existingVariable);
+      return;
+    }
+
+    setCreatingToken(token);
+    try {
+      const packageResult = await createVariablePackage({ name: trimmed });
+      if (!packageResult.ok || !packageResult.data) {
+        showToast(t("toast.saveFailed"), "error");
+        return;
+      }
+
+      const pkg = packageResult.data;
+      const variableResult = await createVariable({
+        packageId: pkg.id,
+        key: trimmed,
+        label: trimmed,
+        allowFreeText: true,
+        required: false,
+      });
+
+      if (!variableResult.ok || !variableResult.data) {
+        await deleteVariablePackage(pkg.id);
+        showToast(t("toast.saveFailed"), "error");
+        return;
+      }
+
+      const variable = variableResult.data;
+      if (trimmed !== token) {
+        setBody((prev) => prev.split(`{{${token}}}`).join(`{{${trimmed}}}`));
+      }
+      setAllPackages((prev) => [...prev, pkg]);
+      setAllVariables((prev) => [...prev, variable]);
+      startEditVariable(variable);
+      showToast(t("toast.variableCreated"), "success");
+    } finally {
+      setCreatingToken(null);
+    }
+  };
+
+  const handleSaveVariableEdit = async () => {
+    if (!editingVariable || !editVariableName.trim() || isSavingField) return;
+
+    const trimmedName = editVariableName.trim();
+    const duplicateVariable = allVariables.find(
+      (variable) =>
+        variable.id !== editingVariable.id &&
+        variable.key.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (duplicateVariable) {
+      showToast(t("toast.variableDuplicate"), "error");
+      return;
+    }
+
+    setIsSavingField(true);
+    try {
+      const currentPackage = allPackages.find((pkg) => pkg.id === editingVariable.packageId);
+      if (currentPackage && currentPackage.name !== trimmedName) {
+        const packageResult = await updateVariablePackage(currentPackage.id, { name: trimmedName });
+        if (!packageResult.ok || !packageResult.data) {
+          showToast(t("toast.saveFailed"), "error");
+          return;
+        }
+        setAllPackages((prev) =>
+          prev.map((pkg) => (pkg.id === currentPackage.id ? packageResult.data! : pkg))
+        );
+      }
+
+      const filteredOptions = editVariableOptions.map((value) => value.trim()).filter(Boolean);
+      const variableResult = await updateVariable(editingVariable.id, {
+        key: trimmedName,
+        label: trimmedName,
+        defaultValue: editVariableDefault.trim(),
+        options: filteredOptions,
+        allowFreeText: editVariableAllowFreeText,
+        required: editVariableRequired,
+      });
+
+      if (!variableResult.ok || !variableResult.data) {
+        showToast(t("toast.saveFailed"), "error");
+        return;
+      }
+
+      const updatedVariable = variableResult.data;
+      if (editingVariable.key !== updatedVariable.key) {
+        setBody((prev) =>
+          prev.split(`{{${editingVariable.key}}}`).join(`{{${updatedVariable.key}}}`)
+        );
+      }
+      setAllVariables((prev) =>
+        prev.map((variable) => (variable.id === updatedVariable.id ? updatedVariable : variable))
+      );
+      resetVariableEdit();
+      showToast(t("toast.variableSaved"), "success");
+    } finally {
+      setIsSavingField(false);
     }
   };
 
@@ -353,6 +500,19 @@ export default function TemplateEditor({
     document.execCommand("insertText", false, text);
   };
 
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const chip = target.closest(".ce-chip") as HTMLElement | null;
+    if (!chip || !editorRef.current?.contains(chip)) return;
+
+    const key = chip.dataset.varKey;
+    if (!key) return;
+    const variable = allVariables.find((item) => item.key === key);
+    if (variable) {
+      startEditVariable(variable);
+    }
+  };
+
   // --- Click-to-Insert ---
   const [insertedChipKey, setInsertedChipKey] = useState<string | null>(null);
   const insertVariable = (key: string, _source?: HTMLElement) => {
@@ -401,13 +561,15 @@ export default function TemplateEditor({
     if (!editor) return;
     editor.querySelectorAll(".ce-chip").forEach((chip) => {
       const el = chip as HTMLElement;
-      if (highlightKey && el.dataset.varKey === highlightKey) {
+      const isHighlighted = highlightKey && el.dataset.varKey === highlightKey;
+      const isEditing = editingVariable && el.dataset.varKey === editingVariable.key;
+      if (isHighlighted || isEditing) {
         el.classList.add("ce-chip-highlight");
       } else {
         el.classList.remove("ce-chip-highlight");
       }
     });
-  }, [highlightKey, body]);
+  }, [highlightKey, body, editingVariable]);
 
   // --- Remove all occurrences of a variable from body ---
   const [confirmRemoveKey, setConfirmRemoveKey] = useState<string | null>(null);
@@ -434,14 +596,277 @@ export default function TemplateEditor({
     const parts = body.split(/(\{\{[^}]+\}\})/g);
     return parts.map((part, i) => {
       if (/^\{\{[^}]+\}\}$/.test(part)) {
+        const key = part.slice(2, -2);
         return (
           <span key={i} className="preview-variable">
-            {part}
+            {resolveLabel(key)}
           </span>
         );
       }
       return <span key={i}>{part}</span>;
     });
+  };
+
+  const renderTemplateInputFields = () => {
+    if (bodyTokens.length === 0) return null;
+
+    const trimmedEditOptions = editVariableOptions.map((value) => value.trim()).filter(Boolean);
+
+    return (
+      <div className="template-input-fields">
+        <div className="template-input-fields-header">
+          <span className="template-input-fields-title">
+            <Settings2 size={13} />
+            {t("variable.templateFieldsTitle")}
+          </span>
+          <span className="template-input-fields-count">
+            {t("variable.fieldCount", { count: bodyTokens.length })}
+          </span>
+        </div>
+
+        <div className="template-input-field-list">
+          {bodyTokens.map((token) => {
+            const builtin = BUILTIN_VARS.find((item) => item.key === token);
+            const normalizedToken = token.trim();
+            const variable = allVariables.find((item) => item.key === token) ??
+              (normalizedToken !== token
+                ? allVariables.find((item) => item.key === normalizedToken)
+                : undefined);
+            const isEditingField = editingVariableId === variable?.id;
+
+            if (builtin) {
+              return (
+                <div key={token} className="template-input-field template-input-field-muted">
+                  <div className="template-input-field-summary">
+                    <div className="template-input-field-main">
+                      <span className="template-input-field-name">{token}</span>
+                      <span className="template-input-field-key">{t("variable.autoInput")}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon btn-icon-danger"
+                      onClick={() => removeVariable(token)}
+                      title={t("variable.removeAll")}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            if (!variable) {
+              return (
+                <div key={token} className="template-input-field template-input-field-missing">
+                  <div className="template-input-field-summary">
+                    <div className="template-input-field-main">
+                      <span className="template-input-field-name">{token}</span>
+                      <span className="template-input-field-key">{t("variable.notCreated")}</span>
+                    </div>
+                    <div className="template-input-field-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-xs"
+                        disabled={creatingToken === token}
+                        onClick={() => handleCreateVariableFromToken(token)}
+                      >
+                        {creatingToken === token ? t("variable.creating") : t("variable.createFromBody")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon btn-icon-danger"
+                        onClick={() => removeVariable(token)}
+                        title={t("variable.removeAll")}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={variable.id}
+                className={`template-input-field ${isEditingField ? "is-editing" : ""}`}
+                onMouseEnter={() => setHighlightKey(variable.key)}
+                onMouseLeave={() => {
+                  if (!isEditingField) setHighlightKey(null);
+                }}
+              >
+                <div className="template-input-field-summary">
+                  <button
+                    type="button"
+                    className="template-input-field-main template-input-field-main-button"
+                    onClick={() => (isEditingField ? resetVariableEdit() : startEditVariable(variable))}
+                  >
+                    <span className="template-input-field-name">{variable.label}</span>
+                    <span className="template-input-field-key">{t("variable.inBodyLabel")}</span>
+                  </button>
+                  <div className="template-input-field-actions">
+                    <span className="variable-card-meta">
+                      {t("variable.occurrenceCount", { count: countVariable(token) })}
+                    </span>
+                    {variable.required && (
+                      <span className="variable-card-meta">{t("variable.requiredBadge")}</span>
+                    )}
+                    {variable.defaultValue && (
+                      <span className="variable-card-meta">
+                        {t("variable.default")}: {variable.defaultValue}
+                      </span>
+                    )}
+                    {variable.options && variable.options.length > 0 && (
+                      <span className="variable-card-meta">
+                        {t("variable.options")}: {variable.options.join(", ")}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-icon btn-icon-danger"
+                      onClick={() => removeVariable(variable.key)}
+                      title={t("variable.removeAll")}
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {isEditingField && (
+                  <div className="template-input-field-edit">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">{t("variablePackage.nameLabel")}</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={editVariableName}
+                          onChange={(e) => setEditVariableName(e.target.value)}
+                          placeholder={t("variablePackage.placeholder.name")}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">{t("variable.optionsLabel")}</label>
+                      <p className="form-hint">{t("variable.optionsHint")}</p>
+                      <div className="option-list">
+                        {editVariableOptions.map((option, index) => (
+                          <div key={index} className="option-item">
+                            <input
+                              type="text"
+                              className="form-input"
+                              value={option}
+                              onChange={(e) => {
+                                const next = [...editVariableOptions];
+                                next[index] = e.target.value;
+                                setEditVariableOptions(next);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.preventDefault();
+                              }}
+                              placeholder={`${t("variable.optionsLabel")} ${index + 1}`}
+                            />
+                            <button
+                              type="button"
+                              className="btn-icon btn-icon-danger"
+                              onClick={() => {
+                                const removed = editVariableOptions[index];
+                                const next = editVariableOptions.filter((_, i) => i !== index);
+                                setEditVariableOptions(next);
+                                if (editVariableDefault === removed.trim()) {
+                                  setEditVariableDefault("");
+                                }
+                              }}
+                              title={t("common.delete")}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="option-add-btn"
+                          onClick={() => setEditVariableOptions([...editVariableOptions, ""])}
+                        >
+                          + {t("variable.addOption")}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group form-group-half">
+                        <label className="form-label">{t("variable.defaultLabel")}</label>
+                        <p className="form-hint">
+                          {trimmedEditOptions.length > 0
+                            ? t("variable.defaultHintWithOptions")
+                            : t("variable.defaultHint")}
+                        </p>
+                        {trimmedEditOptions.length > 0 ? (
+                          <select
+                            className="form-select"
+                            value={editVariableDefault}
+                            onChange={(e) => setEditVariableDefault(e.target.value)}
+                          >
+                            <option value="">{t("variable.noDefault")}</option>
+                            {trimmedEditOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            className="form-input"
+                            value={editVariableDefault}
+                            onChange={(e) => setEditVariableDefault(e.target.value)}
+                            placeholder={t("variable.placeholder.default")}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="inline-variable-checks">
+                      <label className="option-freetext-check">
+                        <input
+                          type="checkbox"
+                          checked={editVariableAllowFreeText}
+                          onChange={(e) => setEditVariableAllowFreeText(e.target.checked)}
+                        />
+                        {t("variable.allowFreeText")}
+                      </label>
+                      <label className="option-freetext-check">
+                        <input
+                          type="checkbox"
+                          checked={editVariableRequired}
+                          onChange={(e) => setEditVariableRequired(e.target.checked)}
+                        />
+                        {t("variable.required")}
+                      </label>
+                    </div>
+
+                    <div className="inline-variable-actions">
+                      <button type="button" className="btn btn-secondary btn-xs" onClick={resetVariableEdit}>
+                        {t("common.cancel")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-xs"
+                        disabled={!editVariableName.trim() || isSavingField}
+                        onClick={handleSaveVariableEdit}
+                      >
+                        {isSavingField ? t("common.loading") : t("common.save")}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -976,6 +1401,7 @@ export default function TemplateEditor({
             suppressContentEditableWarning
             onInput={handleInput}
             onKeyDown={handleKeyDown}
+            onClick={handleEditorClick}
             onPaste={handlePaste}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => {
@@ -984,6 +1410,8 @@ export default function TemplateEditor({
             }}
             data-placeholder={t("template.placeholder.body")}
           />
+
+          {renderTemplateInputFields()}
 
           {/* Preview */}
           {bodyTokens.length > 0 && (
