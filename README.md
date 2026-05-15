@@ -73,6 +73,12 @@ npm run tauri:dev
 npm run tauri:build
 ```
 
+### Microsoft Store 更新
+
+Windows Store 版の更新手順は [Microsoft Store release runbook](docs/ms-store-release-runbook.md) にまとめています。
+
+Codex に再実行させる場合は、[ms-store-release skill source](docs/codex-skills/ms-store-release/SKILL.md) を読ませてから進めます。
+
 ## コード署名
 
 Windows向けビルドのコード署名は [SignPath.io](https://signpath.io/) により無料提供されています。証明書は [SignPath Foundation](https://signpath.org/) が発行しています。
