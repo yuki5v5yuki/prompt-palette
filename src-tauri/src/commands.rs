@@ -13,7 +13,7 @@ use crate::models::*;
 pub fn health_check() -> Result<serde_json::Value, String> {
     Ok(json!({
         "status": "ok",
-        "version": "0.1.0"
+        "version": "0.1.1"
     }))
 }
 
