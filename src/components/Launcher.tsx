@@ -16,8 +16,9 @@ import {
 
 const UNCATEGORIZED = "__uncategorized__";
 const LAUNCHER_WIDTH = 600;
-const LAUNCHER_MIN_HEIGHT = 220;
-const LAUNCHER_MAX_HEIGHT = 480;
+const LAUNCHER_MIN_HEIGHT = 420;
+const LAUNCHER_MAX_HEIGHT = 640;
+const LAUNCHER_RESULTS_MAX_HEIGHT = 440;
 
 const fuseOptions = {
   keys: [
@@ -79,11 +80,19 @@ export default function Launcher() {
     const launcher = launcherRef.current;
     if (!launcher) return;
 
+    const resultsList = launcher.querySelector<HTMLElement>(".launcher-results");
+    const contentHeight = resultsList
+      ? Math.ceil(
+          Math.max(0, launcher.scrollHeight - resultsList.clientHeight) +
+            Math.min(resultsList.scrollHeight, LAUNCHER_RESULTS_MAX_HEIGHT)
+        )
+      : Math.ceil(launcher.scrollHeight);
+
     const nextHeight = Math.max(
       LAUNCHER_MIN_HEIGHT,
       Math.min(
         LAUNCHER_MAX_HEIGHT,
-        Math.ceil(launcher.scrollHeight)
+        contentHeight
       )
     );
     if (Math.abs(lastLauncherHeightRef.current - nextHeight) < 2) return;

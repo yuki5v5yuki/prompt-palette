@@ -22,7 +22,7 @@ param(
     [string]$OutputPath = "PromptPalette.msix",
 
     [Parameter(Mandatory=$false)]
-    [string]$Version = "0.2.1.0",
+    [string]$Version = "0.2.2.0",
 
     [Parameter(Mandatory=$false)]
     [string]$Publisher = "CN=PromptPalette"
