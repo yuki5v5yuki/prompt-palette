@@ -36,7 +36,7 @@
 
 ## 使い方
 
-初めて触る人向けの視覚マニュアルは [Prompt Palette かんたんマニュアル](docs/user-manual.html) にまとめています。
+初めて触る人向けの視覚マニュアルは [Prompt Palette かんたんマニュアル](docs/user-manual.html) にまとめています。このHTMLは1ファイルで配布でき、オフラインでも開けます。
 
 ### ランチャー
 
