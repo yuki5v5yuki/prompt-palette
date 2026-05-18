@@ -1,0 +1,2041 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Palette かんたんマニュアル</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1a1a1a;
+      --muted: #787878;
+      --paper: #f7f7f5;
+      --panel: #ffffff;
+      --line: #e8e8e8;
+      --sidebar: #fafaf8;
+      --soft: #f7f7f5;
+      --dark: #161616;
+      --dark-2: #1e1e1e;
+      --accent: #ffd700;
+      --accent-hover: #e6c200;
+      --accent-light: #fff8dc;
+      --accent-text: #8b7500;
+      --accent-glow: rgba(255, 215, 0, .15);
+      --success: #22c55e;
+      --error: #ef4444;
+      --shadow: 0 18px 60px rgba(0, 0, 0, .12);
+      --soft-shadow: 0 10px 28px rgba(0, 0, 0, .08);
+      font-family: "DM Sans", "Hiragino Sans", "Yu Gothic", "Yu Gothic UI", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255, 215, 0, .16), transparent 26rem),
+        radial-gradient(circle at 92% 12%, rgba(255, 248, 220, .72), transparent 24rem),
+        linear-gradient(180deg, #ffffff 0%, var(--paper) 42%, #f1f1ee 100%);
+      color: var(--ink);
+      line-height: 1.75;
+    }
+
+    a { color: var(--accent-text); text-decoration-thickness: .08em; text-underline-offset: .22em; }
+    code, kbd {
+      border: 1px solid var(--line);
+      border-bottom-color: #d5d5d0;
+      border-radius: 6px;
+      background: var(--soft);
+      color: var(--ink);
+      padding: .08rem .38rem;
+      font: 600 .92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    kbd {
+      display: inline-block;
+      min-width: 2.2rem;
+      text-align: center;
+      box-shadow: inset 0 -2px 0 rgba(10, 22, 40, .08);
+    }
+
+    .hero {
+      position: relative;
+      min-height: 84vh;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      padding: 4rem 1.25rem 6rem;
+      background:
+        linear-gradient(120deg, rgba(22, 22, 22, .95), rgba(30, 30, 30, .90)),
+        linear-gradient(180deg, var(--dark), var(--dark-2));
+      color: #fff;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(22, 22, 22, .92) 0%, rgba(22, 22, 22, .82) 52%, rgba(22, 22, 22, .28) 76%, rgba(22, 22, 22, .48) 100%);
+    }
+    .hero canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: .88;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr);
+      gap: 2.5rem;
+      align-items: center;
+    }
+    .hero-copy {
+      max-width: 680px;
+      text-shadow: 0 2px 18px rgba(0, 0, 0, .28);
+    }
+    .eyebrow {
+      margin: 0 0 .85rem;
+      color: var(--accent);
+      font-size: .95rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 7vw, 6.2rem);
+      line-height: .98;
+      letter-spacing: 0;
+    }
+    .hero-lead {
+      margin: 1.4rem 0 0;
+      max-width: 40rem;
+      color: #ececec;
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .8rem;
+      margin-top: 1.9rem;
+    }
+    .hero-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      min-height: 44px;
+      border-radius: 8px;
+      padding: .65rem .95rem;
+      background: var(--accent);
+      color: #1a1a00;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 14px 34px rgba(255, 215, 0, .18);
+    }
+    .hero-link.secondary {
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, .28);
+      box-shadow: none;
+    }
+    .hero-panel {
+      border: 1px solid rgba(255, 215, 0, .26);
+      border-radius: 8px;
+      padding: 1rem;
+      background: rgba(255, 255, 255, .10);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .24);
+    }
+    .mini-title {
+      margin: 0 0 .75rem;
+      color: var(--accent);
+      font-weight: 800;
+    }
+    .step-pills {
+      display: grid;
+      gap: .65rem;
+    }
+    .step-pill {
+      width: 100%;
+      border: 1px solid rgba(255, 215, 0, .20);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .12);
+      color: #fff;
+      padding: .72rem .8rem;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .step-pill:hover,
+    .step-pill.active {
+      transform: translateY(-1px);
+      background: rgba(255, 215, 0, .18);
+      border-color: rgba(255, 215, 0, .52);
+    }
+    .step-pill strong { display: block; font-size: .98rem; }
+    .step-pill span { display: block; color: #ececec; font-size: .86rem; }
+    main { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; padding: 3.2rem 0 5rem; }
+    section { margin: 0 0 4.5rem; }
+    h2 {
+      margin: 0 0 1rem;
+      font-size: clamp(1.9rem, 4vw, 3rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    h3 {
+      margin: 0 0 .7rem;
+      font-size: 1.2rem;
+      letter-spacing: 0;
+    }
+    .section-lead {
+      max-width: 48rem;
+      margin: 0 0 1.5rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: .85rem;
+    }
+    .quick-card,
+    .guide-card,
+    .trouble-card,
+    .screen-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: var(--soft-shadow);
+    }
+    .quick-card {
+      padding: 1rem;
+      min-height: 160px;
+    }
+    .quick-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      margin-bottom: .7rem;
+      color: #1a1a00;
+    }
+    .quick-icon svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .quick-card:nth-child(1) .quick-icon { background: var(--accent); }
+    .quick-card:nth-child(2) .quick-icon { background: var(--dark); color: var(--accent); }
+    .quick-card:nth-child(3) .quick-icon { background: var(--accent-hover); }
+    .quick-card:nth-child(4) .quick-icon { background: var(--accent-light); color: var(--accent-text); border: 1px solid var(--accent); }
+    .quick-card:nth-child(5) .quick-icon { background: #242424; color: var(--accent); }
+    .quick-card p { margin: .4rem 0 0; color: var(--muted); font-size: .94rem; }
+
+    .flow-board {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(360px, 1.2fr);
+      gap: 1.2rem;
+      align-items: stretch;
+    }
+    .guide-card {
+      padding: 1.2rem;
+    }
+    .guide-list {
+      margin: 1rem 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: .7rem;
+      counter-reset: guide;
+    }
+    .guide-list li {
+      position: relative;
+      padding: .78rem .85rem .78rem 3rem;
+      border-radius: 8px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+    }
+    .guide-list li::before {
+      counter-increment: guide;
+      content: counter(guide);
+      position: absolute;
+      left: .8rem;
+      top: .8rem;
+      width: 1.55rem;
+      height: 1.55rem;
+      border-radius: 99px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #1a1a00;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .manual-section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .72fr) minmax(420px, 1.28fr);
+      gap: 1.2rem;
+      align-items: stretch;
+    }
+    .scene-stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 430px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+    .scene-stage.admin-stage {
+      background: linear-gradient(145deg, #ffffff, #f7f7f5 70%, #fff8dc);
+    }
+    .scene-stage.launcher-stage {
+      min-height: 520px;
+      background: linear-gradient(145deg, #ffffff 0%, #fff8dc 58%, #f7f7f5 100%);
+    }
+    .scene-status {
+      position: absolute;
+      z-index: 6;
+      left: 1rem;
+      top: 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: .42rem;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: rgba(255, 248, 220, .94);
+      color: var(--accent-text);
+      padding: .34rem .64rem;
+      font-size: .78rem;
+      font-weight: 900;
+      box-shadow: 0 8px 22px rgba(255, 215, 0, .14);
+    }
+    .scene-status::before {
+      content: "";
+      width: .5rem;
+      height: .5rem;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+    .admin-window {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      top: 3.6rem;
+      bottom: 1rem;
+      border: 1px solid #d8d8d4;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .10);
+      overflow: hidden;
+    }
+    .admin-app {
+      display: grid;
+      grid-template-columns: 132px 1fr;
+      height: calc(100% - 34px);
+      min-height: 320px;
+    }
+    .admin-sidebar {
+      background: var(--sidebar);
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+      padding: .9rem .75rem;
+      display: grid;
+      align-content: start;
+      gap: .54rem;
+      font-size: .75rem;
+    }
+    .admin-sidebar b { color: var(--ink); line-height: 1.2; margin-bottom: .35rem; }
+    .admin-sidebar span {
+      display: block;
+      border-radius: 6px;
+      padding: .34rem .45rem;
+      color: var(--muted);
+    }
+    .admin-sidebar .active {
+      background: var(--accent);
+      color: #1a1a00;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(255, 215, 0, .28);
+    }
+    .admin-editor {
+      padding: .9rem;
+      display: grid;
+      gap: .65rem;
+      align-content: start;
+      background: #fff;
+    }
+    .admin-editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .6rem;
+      margin-bottom: .05rem;
+      font-weight: 900;
+    }
+    .admin-editor-toolbar span {
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .admin-new-button,
+    .save-demo {
+      position: relative;
+      border: 0;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #1a1a00;
+      padding: .42rem .72rem;
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 900;
+      overflow: visible;
+    }
+    .save-demo { animation: adminSavePress 9.8s ease-in-out infinite; }
+    .field-label {
+      display: block;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      margin-bottom: .18rem;
+    }
+    .field-box {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: .48rem .56rem;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .body-box {
+      min-height: 100px;
+      line-height: 1.65;
+      font-weight: 600;
+    }
+    .admin-type {
+      display: inline-block;
+      overflow: hidden;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
+    .admin-title-type {
+      max-width: 0;
+      animation: adminTitleType 9.8s steps(7, end) infinite;
+    }
+    .admin-body-type-1 {
+      max-width: 0;
+      animation: adminBodyTypeOne 9.8s steps(17, end) infinite;
+    }
+    .admin-body-type-2 {
+      max-width: 0;
+      animation: adminBodyTypeTwo 9.8s steps(20, end) infinite;
+    }
+    .field-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .4rem;
+      align-items: center;
+    }
+    .admin-toast {
+      position: absolute;
+      right: 1.7rem;
+      bottom: 1.6rem;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--success);
+      color: var(--ink);
+      padding: .62rem .78rem;
+      font-size: .82rem;
+      font-weight: 900;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px) scale(.96);
+      animation: adminToast 9.8s ease-in-out infinite;
+    }
+    .demo-cursor {
+      position: absolute;
+      z-index: 9;
+      width: 30px;
+      height: 38px;
+      pointer-events: none;
+      filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .22));
+      transform: translate(-4px, -4px);
+    }
+    .demo-cursor::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='40' viewBox='0 0 32 40'%3E%3Cpath d='M4 3L4 31L11 24L15 35L21 33L17 22L27 22Z' fill='%23ffffff' stroke='%23151515' stroke-width='2.6' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: contain;
+    }
+    .click-ring {
+      position: absolute;
+      z-index: 8;
+      width: 34px;
+      height: 34px;
+      border: 2px solid var(--accent);
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.55);
+    }
+    .admin-target-cursor,
+    .admin-target-ring {
+      left: 50%;
+      top: 50%;
+    }
+    .admin-field-cursor,
+    .admin-field-ring {
+      left: .62rem;
+      top: 50%;
+    }
+    .admin-body-cursor,
+    .admin-body-ring {
+      left: .62rem;
+      top: 1.15rem;
+    }
+    .admin-title-cursor { animation: adminTargetCursorTitle 9.8s ease-in-out infinite; }
+    .admin-body-cursor { animation: adminTargetCursorBody 9.8s ease-in-out infinite; }
+    .admin-save-cursor { animation: adminTargetCursorSave 9.8s ease-in-out infinite; }
+    .admin-title-ring { animation: adminTargetRingTitle 9.8s ease-in-out infinite; }
+    .admin-body-ring { animation: adminTargetRingBody 9.8s ease-in-out infinite; }
+    .admin-save-ring { animation: adminTargetRingSave 9.8s ease-in-out infinite; }
+    .manual-note-window {
+      position: absolute;
+      left: 5%;
+      right: 5%;
+      top: 3.4rem;
+      bottom: 1.05rem;
+      border: 1px solid #d8d8d4;
+      border-radius: 8px;
+      background: #fffef8;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .10);
+      overflow: hidden;
+    }
+    .manual-note-body {
+      padding: .95rem 1rem 1rem;
+      color: var(--ink);
+      font-size: .84rem;
+      line-height: 1.72;
+      min-height: 250px;
+    }
+    .manual-note-placeholder {
+      display: block;
+      color: #9b9b95;
+      animation: manualNotePlaceholderFade 9.8s ease-in-out infinite;
+    }
+    .manual-note-pasted {
+      display: block;
+      white-space: pre-line;
+      opacity: 0;
+      transform: translateY(6px);
+      animation: manualNotePastedText 9.8s ease-in-out infinite;
+    }
+    .manual-launcher-window {
+      position: absolute;
+      left: 50%;
+      top: 21%;
+      z-index: 4;
+      width: min(440px, 86%);
+      height: 354px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 215, 0, .12);
+      background: #fff;
+      box-shadow: 0 24px 80px rgba(25, 37, 52, .24);
+      overflow: hidden;
+      transform: translate(-50%, 18px) scale(.96);
+      opacity: 0;
+      animation: manualLauncherWindow 9.8s ease-in-out infinite;
+    }
+    .manual-launcher-search-step {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+    .manual-launcher-search-step {
+      opacity: 0;
+      animation: manualLauncherSearchStep 9.8s ease-in-out infinite;
+    }
+    .manual-launcher-search-area {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .manual-launcher-input {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--ink);
+      padding: .48rem .75rem;
+      font-size: .88rem;
+      font-weight: 800;
+    }
+    .manual-launcher-query {
+      display: inline-block;
+      max-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      animation: manualTypeSearch 9.8s steps(5, end) infinite;
+    }
+    .manual-launcher-categories {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .manual-launcher-chip {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--muted);
+      padding: .18rem .62rem;
+      font-size: .72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .manual-launcher-chip.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #1a1a00;
+      box-shadow: 0 1px 3px rgba(255, 215, 0, .25);
+    }
+    .manual-launcher-results {
+      flex: 1;
+      min-height: 0;
+      padding: 4px;
+    }
+    .manual-launcher-status {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 10px 8px;
+      color: var(--muted);
+      font-size: .68rem;
+      line-height: 1.4;
+      opacity: 0;
+      animation: launcherResultsIn 9.8s ease-in-out infinite;
+    }
+    .manual-launcher-item {
+      position: relative;
+      border-radius: 8px;
+      padding: .56rem .7rem;
+      margin-bottom: 2px;
+      background: #fff;
+      color: var(--ink);
+      opacity: 0;
+      transform: translateY(6px);
+      animation: launcherResultsIn 9.8s ease-in-out infinite;
+    }
+    .manual-launcher-item.selected {
+      background: var(--accent-light);
+      box-shadow: inset 2px 0 0 var(--accent);
+    }
+    .launcher-item-cursor,
+    .launcher-item-ring {
+      left: 50%;
+      top: 45%;
+    }
+    .launcher-item-cursor { animation: launcherItemCursor 9.8s ease-in-out infinite; }
+    .launcher-item-ring { animation: launcherItemRing 9.8s ease-in-out infinite; }
+    .manual-launcher-item-title {
+      font-size: .82rem;
+      font-weight: 900;
+      margin-bottom: .1rem;
+    }
+    .manual-launcher-tags {
+      display: flex;
+      gap: 4px;
+      margin-bottom: .1rem;
+    }
+    .manual-launcher-tag {
+      border-radius: 8px;
+      background: var(--accent-light);
+      color: var(--accent-text);
+      padding: 1px 6px;
+      font-size: .62rem;
+      font-weight: 700;
+    }
+    .manual-launcher-preview {
+      color: var(--muted);
+      font-size: .72rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .manual-launcher-hints {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 6px 12px;
+      border-top: 1px solid var(--line);
+      background: var(--soft);
+      color: var(--muted);
+      font-size: .66rem;
+      flex-shrink: 0;
+    }
+    .manual-launcher-hints span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .ui-snapshot {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--soft-shadow);
+    }
+    .ui-snapshot-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .8rem;
+      padding: .65rem .75rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--soft);
+      font-size: .78rem;
+      font-weight: 900;
+      color: var(--muted);
+    }
+    .ui-primary-button {
+      border-radius: 7px;
+      background: var(--accent);
+      color: #1a1a00;
+      padding: .3rem .55rem;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+    .ui-snapshot-body {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: .65rem;
+      padding: .75rem;
+      min-height: 190px;
+    }
+    .ui-list,
+    .ui-editor {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .65rem;
+      background: #fff;
+    }
+    .ui-list-item {
+      border-radius: 7px;
+      background: var(--soft);
+      padding: .48rem .55rem;
+      margin-bottom: .45rem;
+      font-size: .75rem;
+      color: var(--ink);
+      font-weight: 800;
+    }
+    .ui-list-item.active {
+      background: var(--accent-light);
+      outline: 1px solid var(--accent);
+    }
+    .ui-muted {
+      display: block;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: .68rem;
+      margin-top: .12rem;
+    }
+    .ui-field {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: .44rem .55rem;
+      margin-bottom: .5rem;
+      font-size: .76rem;
+      font-weight: 800;
+      color: var(--ink);
+      background: #fff;
+    }
+    .ui-field.body {
+      min-height: 78px;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+    .ui-mini-chip {
+      display: inline-block;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      background: var(--accent-light);
+      color: var(--accent-text);
+      padding: 0 .35rem;
+      font-size: .72rem;
+      font-weight: 900;
+    }
+
+    .animation-stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 540px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, #ffffff, #fff8dc 45%, #f7f7f5);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+    .fake-desktop {
+      position: absolute;
+      inset: 1rem;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .demo-status {
+      position: absolute;
+      left: 1rem;
+      top: 1rem;
+      z-index: 5;
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: rgba(255, 248, 220, .94);
+      color: var(--accent-text);
+      padding: .35rem .65rem;
+      font-size: .78rem;
+      font-weight: 900;
+      box-shadow: 0 8px 22px rgba(255, 215, 0, .16);
+    }
+    .demo-status-dot {
+      width: .55rem;
+      height: .55rem;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+      animation: statusPulse 8.4s ease-in-out infinite;
+    }
+    .demo-status-text {
+      position: relative;
+      min-width: 11.8em;
+      height: 1.3em;
+      overflow: hidden;
+    }
+    .demo-status-text span {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateY(60%);
+      animation: statusSwap 8.4s ease-in-out infinite;
+    }
+    .demo-status-text span:nth-child(1) { animation-delay: 0s; }
+    .demo-status-text span:nth-child(2) { animation-delay: 2.8s; }
+    .demo-status-text span:nth-child(3) { animation-delay: 5.6s; }
+    .fake-window {
+      position: absolute;
+      width: 68%;
+      min-height: 58%;
+      left: 5%;
+      top: 13%;
+      border: 1px solid #d8d8d4;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 20px 60px rgba(28, 36, 48, .14);
+      overflow: hidden;
+    }
+    .template-window {
+      animation: templateWindow 8.4s ease-in-out infinite;
+    }
+    .memo-window {
+      width: 52%;
+      min-height: 45%;
+      left: 41%;
+      top: 38%;
+      background: #fffef8;
+      animation: memoWindow 8.4s ease-in-out infinite;
+    }
+    .window-bar {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 .75rem;
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 99px; background: #e86157; }
+    .dot:nth-child(2) { background: #e7b84f; }
+    .dot:nth-child(3) { background: #5bbb73; }
+    .window-title {
+      margin-left: .45rem;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+    }
+    .mock-app {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      min-height: 310px;
+    }
+    .mock-side {
+      background: var(--sidebar);
+      color: var(--muted);
+      border-right: 1px solid var(--line);
+      padding: .9rem;
+      display: grid;
+      align-content: start;
+      gap: .55rem;
+      font-size: .76rem;
+    }
+    .mock-side b { color: var(--ink); margin-bottom: .4rem; display: block; }
+    .mock-side span {
+      display: block;
+      padding: .38rem .45rem;
+      border-radius: 6px;
+    }
+    .mock-side .active { background: var(--accent); color: #1a1a00; }
+    .mock-main {
+      padding: .9rem;
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: .8rem;
+      background: #ffffff;
+    }
+    .mock-list,
+    .mock-editor {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: .75rem;
+    }
+    .mock-row {
+      height: 44px;
+      border-radius: 7px;
+      background: var(--soft);
+      margin-bottom: .5rem;
+      padding: .45rem .55rem;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    .mock-row.active { outline: 2px solid var(--accent-glow); background: var(--accent-light); color: var(--ink); }
+    .mock-input,
+    .mock-textarea {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+      padding: .5rem;
+      font-size: .78rem;
+      color: var(--ink);
+      margin-bottom: .55rem;
+    }
+    .mock-textarea { height: 92px; }
+    .demo-type {
+      display: inline-block;
+      overflow: hidden;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
+    .type-title {
+      max-width: 0;
+      animation: typeTitle 8.4s steps(7, end) infinite;
+    }
+    .type-body-1 {
+      max-width: 0;
+      animation: typeBodyOne 8.4s steps(10, end) infinite;
+    }
+    .type-body-2 {
+      max-width: 0;
+      animation: typeBodyTwo 8.4s steps(18, end) infinite;
+    }
+    .blink-caret::after {
+      content: "";
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      margin-left: 2px;
+      background: var(--accent-text);
+      vertical-align: -.16em;
+      animation: caretBlink .72s step-end infinite;
+    }
+    .chip {
+      display: inline-block;
+      border-radius: 99px;
+      padding: .12rem .45rem;
+      background: var(--accent-light);
+      color: var(--accent-text);
+      border: 1px solid var(--accent);
+      font-weight: 800;
+      font-size: .8em;
+    }
+    .mock-button {
+      display: inline-block;
+      border-radius: 7px;
+      background: var(--accent);
+      color: #1a1a00;
+      padding: .42rem .7rem;
+      font-size: .78rem;
+      font-weight: 800;
+      animation: savePress 8.4s ease-in-out infinite;
+    }
+    .launcher-pop {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: min(390px, 82%);
+      border-radius: 8px;
+      border: 1px solid #d8d8d4;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 24px 80px rgba(25, 37, 52, .24);
+      padding: .85rem;
+      opacity: 0;
+      transform: translate(-50%, 18px) scale(.96);
+      animation: launcherDemo 8.4s ease-in-out infinite;
+    }
+    .launcher-search {
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: .48rem .65rem;
+      color: var(--ink);
+      background: var(--soft);
+      font-weight: 800;
+    }
+    .launcher-search .demo-type {
+      max-width: 0;
+      animation: typeSearch 8.4s steps(5, end) infinite;
+    }
+    .launcher-result {
+      display: grid;
+      gap: .18rem;
+      margin-top: .55rem;
+      padding: .55rem .65rem;
+      border-radius: 7px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      color: var(--ink);
+    }
+    .launcher-result small { color: var(--muted); }
+    .paste-bubble {
+      position: absolute;
+      right: 8%;
+      top: 28%;
+      border-radius: 8px;
+      background: #1a1a1a;
+      color: var(--accent);
+      padding: .7rem .85rem;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .22);
+      opacity: 0;
+      transform: translateY(8px) scale(.96);
+      animation: popPaste 8.4s ease-in-out infinite;
+    }
+    .memo-body {
+      padding: .85rem 1rem 1rem;
+      color: var(--ink);
+      font-size: .84rem;
+      line-height: 1.7;
+      min-height: 210px;
+    }
+    .memo-placeholder {
+      color: #b0b0aa;
+      animation: placeholderFade 8.4s ease-in-out infinite;
+    }
+    .memo-pasted {
+      display: block;
+      white-space: pre-line;
+      opacity: 0;
+      transform: translateY(6px);
+      animation: pastedText 8.4s ease-in-out infinite;
+    }
+    .memo-highlight {
+      display: inline-block;
+      border-radius: 5px;
+      background: var(--accent-light);
+      color: var(--accent-text);
+      padding: 0 .2rem;
+      border: 1px solid rgba(255, 215, 0, .55);
+    }
+    .demo-pointer {
+      position: absolute;
+      z-index: 6;
+      width: 0;
+      height: 0;
+      border-left: 11px solid #1a1a1a;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .2));
+      transform: rotate(35deg);
+      animation: pointerMove 8.4s ease-in-out infinite;
+    }
+    @keyframes adminTitleType {
+      0%, 22% { max-width: 0; }
+      36%, 100% { max-width: 9em; }
+    }
+    @keyframes adminBodyTypeOne {
+      0%, 50% { max-width: 0; }
+      65%, 100% { max-width: 18em; }
+    }
+    @keyframes adminBodyTypeTwo {
+      0%, 59% { max-width: 0; }
+      78%, 100% { max-width: 22em; }
+    }
+    @keyframes adminToast {
+      0%, 89% { transform: translateY(8px) scale(.96); opacity: 0; }
+      93%, 97% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(8px) scale(.96); opacity: 0; }
+    }
+    @keyframes adminSavePress {
+      0%, 80% { transform: translateY(0); filter: brightness(1); }
+      84%, 88% { transform: translateY(1px) scale(.96); filter: brightness(.96); }
+      93%, 100% { transform: translateY(0); filter: brightness(1); }
+    }
+    @keyframes adminTargetCursorTitle {
+      0%, 9%, 39%, 100% { opacity: 0; }
+      12%, 36% { opacity: 1; }
+    }
+    @keyframes adminTargetCursorBody {
+      0%, 39%, 80%, 100% { opacity: 0; }
+      42%, 77% { opacity: 1; }
+    }
+    @keyframes adminTargetCursorSave {
+      0%, 76%, 95%, 100% { opacity: 0; }
+      79%, 92% { opacity: 1; }
+    }
+    @keyframes adminTargetRingTitle {
+      0%, 11% { opacity: 0; transform: translate(-50%, -50%) scale(.55); }
+      14% { opacity: .85; transform: translate(-50%, -50%) scale(.55); }
+      21%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+    }
+    @keyframes adminTargetRingBody {
+      0%, 41% { opacity: 0; transform: translate(-50%, -50%) scale(.55); }
+      44% { opacity: .85; transform: translate(-50%, -50%) scale(.55); }
+      50%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+    }
+    @keyframes adminTargetRingSave {
+      0%, 80% { opacity: 0; transform: translate(-50%, -50%) scale(.55); }
+      84% { opacity: .9; transform: translate(-50%, -50%) scale(.55); }
+      90%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+    }
+    @keyframes manualLauncherWindow {
+      0%, 12% { opacity: 0; transform: translate(-50%, 18px) scale(.96); }
+      18%, 72% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      80%, 100% { opacity: 0; transform: translate(-50%, -8px) scale(.98); }
+    }
+    @keyframes manualLauncherSearchStep {
+      0%, 15% { opacity: 0; transform: translateY(8px); }
+      21%, 72% { opacity: 1; transform: translateY(0); }
+      80%, 100% { opacity: 0; transform: translateY(-8px); }
+    }
+    @keyframes manualTypeSearch {
+      0%, 22% { max-width: 0; }
+      39%, 100% { max-width: 6em; }
+    }
+    @keyframes launcherResultsIn {
+      0%, 38% { opacity: 0; transform: translateY(6px); }
+      45%, 100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes launcherItemCursor {
+      0%, 47%, 72%, 100% { opacity: 0; }
+      52%, 67% { opacity: 1; }
+    }
+    @keyframes launcherItemRing {
+      0%, 58% { opacity: 0; transform: translate(-50%, -50%) scale(.55); }
+      62% { opacity: .9; transform: translate(-50%, -50%) scale(.55); }
+      70%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+    }
+    @keyframes manualNotePlaceholderFade {
+      0%, 72% { opacity: 1; }
+      81%, 100% { opacity: 0; }
+    }
+    @keyframes manualNotePastedText {
+      0%, 72% { opacity: 0; transform: translateY(6px); }
+      82%, 100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes statusPulse {
+      0%, 100% { transform: scale(1); }
+      20%, 23%, 54%, 57%, 83%, 86% { transform: scale(1.28); }
+    }
+    @keyframes statusSwap {
+      0%, 8% { opacity: 0; transform: translateY(60%); }
+      13%, 28% { opacity: 1; transform: translateY(0); }
+      33%, 100% { opacity: 0; transform: translateY(-60%); }
+    }
+    @keyframes templateWindow {
+      0%, 50% { transform: translateX(0) scale(1); opacity: 1; }
+      59%, 100% { transform: translateX(-26px) scale(.92); opacity: .62; }
+    }
+    @keyframes memoWindow {
+      0%, 56% { transform: translateY(18px) scale(.96); opacity: 0; }
+      63%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes typeTitle {
+      0%, 8% { max-width: 0; }
+      18%, 100% { max-width: 9em; }
+    }
+    @keyframes typeBodyOne {
+      0%, 14% { max-width: 0; }
+      25%, 100% { max-width: 12em; }
+    }
+    @keyframes typeBodyTwo {
+      0%, 22% { max-width: 0; }
+      35%, 100% { max-width: 18em; }
+    }
+    @keyframes caretBlink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    @keyframes savePress {
+      0%, 34% { transform: translateY(0); filter: brightness(1); }
+      39%, 43% { transform: translateY(1px) scale(.96); filter: brightness(.96); }
+      48%, 100% { transform: translateY(0); filter: brightness(1); }
+    }
+    @keyframes launcherDemo {
+      0%, 38% { opacity: 0; transform: translate(-50%, 18px) scale(.96); }
+      45%, 62% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+      69%, 100% { opacity: 0; transform: translate(-50%, -8px) scale(.98); }
+    }
+    @keyframes typeSearch {
+      0%, 47% { max-width: 0; }
+      56%, 100% { max-width: 6em; }
+    }
+    @keyframes popPaste {
+      0%, 66% { transform: translateY(8px) scale(.96); opacity: 0; }
+      72%, 88% { transform: translateY(0) scale(1); opacity: 1; }
+      95%, 100% { transform: translateY(8px) scale(.96); opacity: 0; }
+    }
+    @keyframes placeholderFade {
+      0%, 70% { opacity: 1; }
+      78%, 100% { opacity: 0; }
+    }
+    @keyframes pastedText {
+      0%, 70% { opacity: 0; transform: translateY(6px); }
+      80%, 100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pointerMove {
+      0%, 10% { left: 39%; top: 54%; opacity: 0; }
+      18%, 33% { left: 57%; top: 60%; opacity: 1; }
+      39%, 43% { left: 67%; top: 70%; opacity: 1; transform: rotate(35deg) scale(.9); }
+      49%, 62% { left: 52%; top: 45%; opacity: 1; transform: rotate(35deg) scale(1); }
+      70%, 80% { left: 75%; top: 57%; opacity: 1; transform: rotate(35deg) scale(1); }
+      90%, 100% { left: 80%; top: 57%; opacity: 0; }
+    }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .screen-card { overflow: hidden; }
+    .screen-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      border-bottom: 1px solid var(--line);
+      padding: .85rem 1rem;
+      background: var(--soft);
+    }
+    .screen-head strong { font-size: 1rem; }
+    .screen-shot {
+      min-height: 280px;
+      padding: 1rem;
+      background: linear-gradient(180deg, #fff, #f7f7f5);
+    }
+    .screen-notes {
+      padding: 0 1rem 1rem;
+      color: var(--muted);
+      margin: 0;
+      font-size: .94rem;
+    }
+    .mini-layout {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      min-height: 230px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .mini-side {
+      background: var(--sidebar);
+      border-right: 1px solid var(--line);
+      padding: .8rem .55rem;
+      color: var(--muted);
+      display: grid;
+      align-content: start;
+      gap: .42rem;
+      font-size: .72rem;
+    }
+    .mini-side span {
+      padding: .35rem .45rem;
+      border-radius: 6px;
+    }
+    .mini-side span:first-child { color: var(--ink); font-weight: 900; }
+    .mini-side .active { background: var(--accent); color: #1a1a00; }
+    .mini-content { padding: .8rem; }
+    .mini-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: .5rem;
+      align-items: center;
+      margin-bottom: .7rem;
+    }
+    .mini-titlebar {
+      height: 18px;
+      width: 44%;
+      border-radius: 99px;
+      background: #e8e8e8;
+    }
+    .mini-primary {
+      height: 28px;
+      min-width: 76px;
+      border-radius: 7px;
+      background: var(--accent);
+    }
+    .mini-columns {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: .55rem;
+    }
+    .mini-list, .mini-editor {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .6rem;
+      min-height: 155px;
+    }
+    .line {
+      height: 12px;
+      border-radius: 99px;
+      background: #e8e8e8;
+      margin-bottom: .45rem;
+    }
+    .line.short { width: 58%; }
+    .line.mid { width: 78%; }
+    .line.hot { background: var(--accent-light); }
+    .mini-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .7rem;
+      background: #fff;
+    }
+    .mini-launcher {
+      max-width: 340px;
+      margin: 1.1rem auto;
+      border: 1px solid #d8d8d4;
+      border-radius: 8px;
+      padding: .8rem;
+      box-shadow: var(--soft-shadow);
+    }
+    .manual-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--soft-shadow);
+    }
+    .manual-table th,
+    .manual-table td {
+      padding: .85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    .manual-table th {
+      background: var(--accent-light);
+      color: var(--accent-text);
+      width: 31%;
+    }
+    .manual-table tr:last-child th,
+    .manual-table tr:last-child td { border-bottom: 0; }
+    .trouble-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .9rem;
+    }
+    .trouble-card { padding: 1rem; }
+    .trouble-card p { margin: .35rem 0 0; color: var(--muted); }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: var(--soft-shadow);
+      padding: 1rem 1.1rem;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    @media (max-width: 920px) {
+      .hero-inner,
+      .flow-board,
+      .manual-section-grid { grid-template-columns: 1fr; }
+      .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .screens-grid,
+      .trouble-grid { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+    }
+    @media (max-width: 720px) {
+      .animation-stage { min-height: 560px; }
+      .template-window {
+        width: 78%;
+        left: 4%;
+      }
+      .memo-window {
+        width: 68%;
+        left: 28%;
+        top: 42%;
+      }
+      .animation-stage .mock-app {
+        grid-template-columns: 118px 1fr;
+      }
+      .animation-stage .mock-main {
+        grid-template-columns: 1fr;
+      }
+      .animation-stage .mock-list {
+        display: none;
+      }
+      .launcher-pop {
+        left: 56%;
+        width: min(360px, 76%);
+      }
+      .scene-stage.launcher-stage { min-height: 560px; }
+      .manual-launcher-window {
+        width: min(420px, 90%);
+        top: 22%;
+      }
+      .manual-note-window {
+        left: 4%;
+        right: 4%;
+      }
+    }
+    @media (max-width: 560px) {
+      main { width: min(100% - 1rem, 1120px); }
+      .hero { padding: 3rem 1rem 5.5rem; }
+      .quick-grid { grid-template-columns: 1fr; }
+      .mock-app,
+      .mini-layout,
+      .mini-columns { grid-template-columns: 1fr; }
+      .mock-side, .mini-side { display: none; }
+      .animation-stage { min-height: 520px; }
+      .fake-window { width: 88%; left: 6%; }
+      .launcher-pop { right: 5%; width: 90%; }
+      .scene-stage { min-height: 470px; }
+      .scene-stage.launcher-stage { min-height: 610px; }
+      .admin-window {
+        left: .65rem;
+        right: .65rem;
+        top: 3.3rem;
+      }
+      .admin-app { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; }
+      .manual-launcher-window {
+        width: 94%;
+        height: 366px;
+      }
+      .manual-launcher-hints {
+        gap: 7px;
+        font-size: .58rem;
+      }
+      .manual-launcher-categories {
+        padding-inline: 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero" id="top">
+    <canvas id="manual-orbit" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Prompt Palette Manual</p>
+        <h1>Prompt Palette</h1>
+        <p class="hero-lead">
+          よく使う文章を登録して、必要な場所で一瞬で呼び出すためのアプリです。
+          まずは「作る → 呼ぶ → 貼る」の3つだけ覚えればOKです。
+        </p>
+        <div class="hero-actions">
+          <a class="hero-link" href="#admin-create">作り方を見る</a>
+          <a class="hero-link secondary" href="#trouble">困ったとき</a>
+        </div>
+      </div>
+      <aside class="hero-panel" aria-label="操作の3ステップ">
+        <p class="mini-title">使い方の流れ</p>
+        <div class="step-pills">
+          <button class="step-pill active" data-step="0"><strong>1. 作る</strong><span>テンプレートに文章を登録</span></button>
+          <button class="step-pill" data-step="1"><strong>2. 呼ぶ</strong><span>Ctrl + Spaceでランチャー表示</span></button>
+          <button class="step-pill" data-step="2"><strong>3. 貼る</strong><span>完成文を今の入力欄へ</span></button>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section aria-labelledby="what">
+      <h2 id="what">まず、何ができるアプリ？</h2>
+      <p class="section-lead">
+        Prompt Palette は「毎回書いている文章」を保存して、必要なときにすぐ出す道具です。
+        AIへの指示、メール返信、日報、問い合わせ対応など、くり返し使う文章に向いています。
+      </p>
+      <div class="quick-grid">
+        <article class="quick-card">
+          <div class="quick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/>
+              <path d="M16 13H8"/>
+              <path d="M16 17H8"/>
+              <path d="M10 9H8"/>
+            </svg>
+          </div>
+          <h3>テンプレート</h3>
+          <p>よく使う文章を名前つきで保存します。</p>
+        </article>
+        <article class="quick-card">
+          <div class="quick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m20 20-3.5-3.5"/>
+            </svg>
+          </div>
+          <h3>ランチャー</h3>
+          <p><kbd>Ctrl</kbd> + <kbd>Space</kbd> で小さな検索画面を出します。</p>
+        </article>
+        <article class="quick-card">
+          <div class="quick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="5" width="18" height="14" rx="3"/>
+              <path d="M8 9h5"/>
+              <path d="M8 13h8"/>
+              <path d="M16 9v6"/>
+            </svg>
+          </div>
+          <h3>入力欄</h3>
+          <p>名前、日付、商品名など、毎回変わる部分だけ入力できます。</p>
+        </article>
+        <article class="quick-card">
+          <div class="quick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.6 13.1 13.1 20.6a2 2 0 0 1-2.8 0L3 13.3V4h9.3l8.3 8.3a2 2 0 0 1 0 2.8Z"/>
+              <circle cx="7.5" cy="7.5" r="1"/>
+            </svg>
+          </div>
+          <h3>タグ</h3>
+          <p>文章を探しやすくするラベルです。</p>
+        </article>
+        <article class="quick-card">
+          <div class="quick-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 7h10"/>
+              <path d="m14 4 3 3-3 3"/>
+              <path d="M17 17H7"/>
+              <path d="m10 14-3 3 3 3"/>
+            </svg>
+          </div>
+          <h3>引っ越し</h3>
+          <p>インポート/エクスポートでバックアップや共有ができます。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="admin-create" aria-labelledby="admin-create-title">
+      <h2 id="admin-create-title">管理画面でテンプレートを作る</h2>
+      <p class="section-lead">
+        ここは「準備する場所」です。まずは文章の名前と本文だけを登録します。
+        ランチャーを使う場面とは分けて考えます。
+      </p>
+      <div class="manual-section-grid">
+        <article class="guide-card">
+          <h3>管理画面でやること</h3>
+          <p class="section-lead" style="margin-bottom:.8rem;font-size:.96rem">
+            まずは1つだけ作れば大丈夫です。名前を付けて、本文を書いて、保存します。
+          </p>
+          <ol class="guide-list">
+            <li>左メニューの <strong>テンプレート</strong> を開く</li>
+            <li><strong>新規テンプレート</strong> を押す</li>
+            <li>タイトルに「問い合わせ返信」など探しやすい名前を書く</li>
+            <li>本文に、呼び出したい文章を書く</li>
+            <li><strong>保存</strong> を押して登録する</li>
+          </ol>
+        </article>
+
+        <div class="scene-stage admin-stage" aria-label="管理画面でテンプレートを登録するアニメーション">
+          <div class="scene-status">管理画面: テンプレートを登録</div>
+          <div class="admin-window">
+            <div class="window-bar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="window-title">Prompt Palette</span>
+            </div>
+            <div class="admin-app">
+              <div class="admin-sidebar">
+                <b>Prompt Palette</b>
+                <span class="active">テンプレート</span>
+                <span>タグ</span>
+                <span>入力欄</span>
+                <span>設定</span>
+              </div>
+              <div class="admin-editor">
+                <div class="admin-editor-toolbar">
+                  <strong>テンプレート</strong>
+                  <button class="admin-new-button" type="button">新規テンプレート</button>
+                </div>
+                <label>
+                  <span class="field-label">タイトル</span>
+                  <div class="field-box">
+                    <span class="demo-cursor admin-target-cursor admin-field-cursor admin-title-cursor" aria-hidden="true"></span>
+                    <span class="click-ring admin-target-ring admin-field-ring admin-title-ring" aria-hidden="true"></span>
+                    <span class="admin-type admin-title-type">問い合わせ返信</span>
+                  </div>
+                </label>
+                <label>
+                  <span class="field-label">本文</span>
+                  <div class="field-box body-box">
+                    <span class="demo-cursor admin-target-cursor admin-body-cursor" aria-hidden="true"></span>
+                    <span class="click-ring admin-target-ring admin-body-ring" aria-hidden="true"></span>
+                    <span class="admin-type admin-body-type-1">お問い合わせありがとうございます。</span><br>
+                    <span class="admin-type admin-body-type-2">内容を確認して、本日中に返信いたします。</span>
+                  </div>
+                </label>
+                <div class="field-actions">
+                  <button class="save-demo" type="button">
+                    保存
+                    <span class="demo-cursor admin-target-cursor admin-save-cursor" aria-hidden="true"></span>
+                    <span class="click-ring admin-target-ring admin-save-ring" aria-hidden="true"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="admin-toast">✓ テンプレートを保存しました</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="launcher-use" aria-labelledby="launcher-use-title">
+      <h2 id="launcher-use-title">ランチャーで呼び出して貼る</h2>
+      <p class="section-lead">
+        ここは「実際に使う場所」です。メモ、メール、ブラウザなど、文章を入れたい場所を開いたままランチャーを呼び出します。
+        管理画面とは別の場面です。
+      </p>
+      <div class="manual-section-grid">
+        <article class="guide-card">
+          <h3>ランチャーでやること</h3>
+          <p class="section-lead" style="margin-bottom:.8rem;font-size:.96rem">
+            入力したい場所を先に開いてから、ランチャーを呼び出します。今回はシンプルに、選んだ文章をそのまま貼ります。
+          </p>
+          <ol class="guide-list">
+            <li>テキストメモなど、貼り付けたい場所を開く</li>
+            <li><kbd>Ctrl</kbd> + <kbd>Space</kbd> でランチャーを出す</li>
+            <li>検索欄に「問い合わせ」と入れる</li>
+            <li><strong>問い合わせ返信</strong> を選ぶ</li>
+            <li>Enterで確定して、今の場所へ貼り付ける</li>
+          </ol>
+        </article>
+
+        <div class="scene-stage launcher-stage" aria-label="ランチャーで検索してテキストメモへ貼り付けるアニメーション">
+          <div class="scene-status">ランチャー: 呼び出して貼る</div>
+          <div class="manual-note-window">
+            <div class="window-bar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="window-title">テキストメモ</span>
+            </div>
+            <div class="manual-note-body">
+              <span class="manual-note-placeholder">ここにメモを書けます...</span>
+              <span class="manual-note-pasted">お問い合わせありがとうございます。
+内容を確認して、本日中に返信いたします。</span>
+            </div>
+          </div>
+
+          <div class="manual-launcher-window">
+            <div class="manual-launcher-search-step">
+              <div class="manual-launcher-search-area">
+                <div class="manual-launcher-input"><span class="manual-launcher-query">問い合わせ</span></div>
+              </div>
+              <div class="manual-launcher-categories">
+                <span class="manual-launcher-chip active">すべて</span>
+                <span class="manual-launcher-chip">メール</span>
+                <span class="manual-launcher-chip">サポート</span>
+              </div>
+              <div class="manual-launcher-results">
+                <div class="manual-launcher-status">
+                  <span>1件のテンプレート</span>
+                  <span>選択中: 問い合わせ返信</span>
+                </div>
+                <div class="manual-launcher-item selected">
+                  <span class="demo-cursor launcher-item-cursor" aria-hidden="true"></span>
+                  <span class="click-ring launcher-item-ring" aria-hidden="true"></span>
+                  <div class="manual-launcher-item-title">問い合わせ返信</div>
+                  <div class="manual-launcher-tags">
+                    <span class="manual-launcher-tag">メール</span>
+                    <span class="manual-launcher-tag">サポート</span>
+                  </div>
+                  <div class="manual-launcher-preview">お問い合わせありがとうございます。内容を確認して...</div>
+                </div>
+              </div>
+              <div class="manual-launcher-hints">
+                <span><kbd>Esc</kbd> 閉じる</span>
+                <span><kbd>↑↓</kbd> 選択</span>
+                <span><kbd>Enter</kbd> 決定</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="screens">
+      <h2 id="screens">画面の見方</h2>
+      <p class="section-lead">
+        初めて開いたときは、左のメニューから見ます。迷ったら「テンプレート」に戻れば大丈夫です。
+      </p>
+      <div class="screens-grid">
+        <article class="screen-card">
+          <div class="screen-head"><strong>テンプレート画面</strong><span>文章を作る場所</span></div>
+          <div class="screen-shot">
+            <div class="ui-snapshot">
+              <div class="ui-snapshot-toolbar">
+                <span>テンプレート管理</span>
+                <span class="ui-primary-button">新規テンプレート</span>
+              </div>
+              <div class="ui-snapshot-body">
+                <div class="ui-list">
+                  <div class="ui-list-item active">問い合わせ返信<span class="ui-muted">メール / サポート</span></div>
+                  <div class="ui-list-item">日報ひな形<span class="ui-muted">毎日の記録</span></div>
+                  <div class="ui-list-item">SNS下書き<span class="ui-muted">投稿作成</span></div>
+                </div>
+                <div class="ui-editor">
+                  <div class="ui-field">タイトル: 問い合わせ返信</div>
+                  <div class="ui-field body">
+                    <span class="ui-mini-chip">お客様名</span> 様<br>
+                    お問い合わせありがとうございます。
+                  </div>
+                  <div class="ui-field">タグ: メール / サポート</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="screen-notes">左でテンプレートを選び、右で本文やタグを直します。新しく作るときは右上のボタンから始めます。</p>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-head"><strong>入力欄</strong><span>毎回変わる部分</span></div>
+          <div class="screen-shot">
+            <div class="mini-panel">
+              <h3>このテンプレで使う入力欄</h3>
+              <p><span class="chip">お客様名</span> <span class="chip">日付</span> <span class="chip">返信トーン</span></p>
+              <div class="ui-field">初期値: 山田</div>
+              <div class="ui-field">選択肢: 丁寧 / カジュアル / 短め</div>
+              <div class="ui-field">必須: オン</div>
+            </div>
+          </div>
+          <p class="screen-notes">名前や日付のように毎回変わるところだけ入力欄にします。本文に直接書き直す手間を減らせます。</p>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-head"><strong>ランチャー</strong><span>呼び出す場所</span></div>
+          <div class="screen-shot">
+            <div class="mini-launcher">
+              <div class="launcher-search">AI 返信</div>
+              <div class="launcher-result"><strong>AIへの返信文チェック</strong><small>選択中: AIへの返信文チェック</small></div>
+              <div class="launcher-result" style="background:#f7f7f5"><strong>問い合わせ返信</strong><small>メール / サポート</small></div>
+            </div>
+          </div>
+          <p class="screen-notes"><kbd>Ctrl</kbd> + <kbd>Space</kbd> で出して、検索して、Enterで確定します。文章を入れたい場所の上に出して使います。</p>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-head"><strong>インポート/エクスポート</strong><span>バックアップと共有</span></div>
+          <div class="screen-shot">
+            <div class="mini-panel">
+              <h3>エクスポート</h3>
+              <div class="ui-field">パック名: My Templates</div>
+              <div class="ui-field">対象: 全テンプレート</div>
+              <div class="ui-primary-button" style="display:inline-block;margin:.2rem 0 .7rem">エクスポート</div>
+              <h3 style="margin-top:1rem">インポート</h3>
+              <div class="ui-field">ファイル: sample.ppb.json</div>
+              <div class="ui-field">重複時: スキップ / 上書き / 両方残す</div>
+            </div>
+          </div>
+          <p class="screen-notes">別PCへ移すときや、消えると困るテンプレートを残しておきたいときに使います。</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="field-title">
+      <h2 id="field-title">入力欄は、毎回変わる部分に使う</h2>
+      <p class="section-lead">
+        名前や日付など、毎回変わるところだけ入力欄にします。返信トーンのように、候補から選びたい部分にも使えます。
+      </p>
+      <table class="manual-table">
+        <tbody>
+          <tr>
+            <th>毎回変わる部分</th>
+            <td>お客様名、商品名、日付、担当者名、URL、今日の作業内容</td>
+          </tr>
+          <tr>
+            <th>選択式にしたい部分</th>
+            <td>返信トーン、優先度、カテゴリ、決まった言い回し</td>
+          </tr>
+          <tr>
+            <th>本文に残す部分</th>
+            <td>毎回同じあいさつ、説明、締めの文章</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="trouble" aria-labelledby="trouble-title">
+      <h2 id="trouble-title">困ったとき</h2>
+      <p class="section-lead">
+        まずは下の対処だけ試してください。原因を細かく調べるより、すぐ使える状態に戻すことを優先します。
+      </p>
+      <div class="trouble-grid">
+        <article class="trouble-card">
+          <h3><kbd>Ctrl</kbd> + <kbd>Space</kbd> で出ない</h3>
+          <p>アプリが起動しているか確認します。出ない場合は設定で別のショートカットに変えてみます。</p>
+        </article>
+        <article class="trouble-card">
+          <h3>検索しても見つからない</h3>
+          <p>カテゴリを「すべて」に戻します。タグやタイトルに別の言葉を入れて探します。</p>
+        </article>
+        <article class="trouble-card">
+          <h3>入力欄が出ない</h3>
+          <p>テンプレート本文に入力欄が入っているか確認します。本文内のチップが目印です。</p>
+        </article>
+        <article class="trouble-card">
+          <h3>自動で貼り付かない</h3>
+          <p>文章はクリップボードにコピー済みです。手動で <kbd>Ctrl</kbd> + <kbd>V</kbd> を押してください。</p>
+        </article>
+      </div>
+    </section>
+
+    <section aria-labelledby="usecases">
+      <h2 id="usecases">おすすめの使い方</h2>
+      <table class="manual-table">
+        <tbody>
+          <tr>
+            <th>AIへの指示</th>
+            <td>「この文章をやさしく直して」「要点だけまとめて」など、よく使う頼み方を保存します。</td>
+          </tr>
+          <tr>
+            <th>メール返信</th>
+            <td>問い合わせ返信、日程調整、受領連絡などを入力欄つきで作れます。</td>
+          </tr>
+          <tr>
+            <th>日報・メモ</th>
+            <td>今日やったこと、困ったこと、明日やることの型を作れます。</td>
+          </tr>
+          <tr>
+            <th>SNS下書き</th>
+            <td>投稿の型、告知文、コメント返信のたたき台をすぐ呼び出せます。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module">
+    const hero = document.querySelector(".hero");
+    const buttons = [...document.querySelectorAll(".step-pill")];
+    let activeStep = 0;
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeStep = Number(button.dataset.step || 0);
+        buttons.forEach((item) => item.classList.toggle("active", item === button));
+        window.__manualSetStep?.(activeStep);
+      });
+    });
+
+    function makeCardTexture(THREE, title, body, color) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 640;
+      canvas.height = 360;
+      const ctx = canvas.getContext("2d");
+      const radius = 28;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(18, 18, canvas.width - 36, canvas.height - 36, radius);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(44, 46, 96, 64, 16);
+      ctx.fill();
+
+      const iconTextColor = color === "#1a1a1a" || color === "#8b7500" ? "#ffd700" : "#1a1a00";
+      ctx.fillStyle = iconTextColor;
+      ctx.font = "800 40px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(title.slice(0, 1), 92, 80);
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#1a1a1a";
+      ctx.font = "800 46px sans-serif";
+      ctx.fillText(title, 166, 82);
+      ctx.fillStyle = "#787878";
+      ctx.font = "500 28px sans-serif";
+      wrapText(ctx, body, 50, 170, 540, 42);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const chars = [...text];
+      let line = "";
+      for (const char of chars) {
+        const test = line + char;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, x, y);
+          line = char;
+          y += lineHeight;
+        } else {
+          line = test;
+        }
+      }
+      if (line) ctx.fillText(line, x, y);
+    }
+
+    async function initThree() {
+      const canvas = document.getElementById("manual-orbit");
+      try {
+        const THREE = await import("https://unpkg.com/three@0.160.0/build/three.module.js");
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        camera.position.set(0, 1.2, 8.4);
+
+        const group = new THREE.Group();
+        scene.add(group);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+        const key = new THREE.DirectionalLight(0xeaf7ff, 2.2);
+        key.position.set(4, 6, 5);
+        scene.add(ambient, key);
+
+        const colors = ["#ffd700", "#e6c200", "#1a1a1a"];
+        const items = [
+          ["作る", "テンプレートに文章を登録"],
+          ["呼ぶ", "Ctrl + Spaceでランチャーを表示"],
+          ["貼る", "完成した文章を今の場所へ"]
+        ];
+
+        const cards = items.map((item, index) => {
+          const texture = makeCardTexture(THREE, item[0], item[1], colors[index]);
+          const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: .62,
+            metalness: .06,
+            transparent: true
+          });
+          const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.35), material);
+          const angle = index / items.length * Math.PI * 2;
+          mesh.position.set(Math.cos(angle) * 2.7, Math.sin(angle * 1.4) * .34, Math.sin(angle) * 1.45);
+          mesh.rotation.y = -angle + Math.PI / 2;
+          mesh.userData.base = mesh.position.clone();
+          mesh.userData.index = index;
+          group.add(mesh);
+          return mesh;
+        });
+
+        const curve = new THREE.CatmullRomCurve3([
+          cards[0].position,
+          cards[1].position,
+          cards[2].position,
+          cards[3].position,
+          cards[0].position
+        ], true);
+        const tube = new THREE.Mesh(
+          new THREE.TubeGeometry(curve, 96, .018, 8, true),
+          new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0x8b7500, emissiveIntensity: .22 })
+        );
+        group.add(tube);
+
+        const dots = new THREE.Group();
+        for (let i = 0; i < 80; i++) {
+          const dot = new THREE.Mesh(
+            new THREE.SphereGeometry(.014 + Math.random() * .018, 8, 8),
+            new THREE.MeshBasicMaterial({ color: i % 2 ? 0xffd700 : 0xfff8dc, transparent: true, opacity: .52 })
+          );
+          dot.position.set((Math.random() - .5) * 9, (Math.random() - .5) * 4.5, (Math.random() - .5) * 4);
+          dot.userData.speed = .2 + Math.random() * .7;
+          dots.add(dot);
+        }
+        scene.add(dots);
+
+        function resize() {
+          const width = canvas.clientWidth || window.innerWidth;
+          const height = canvas.clientHeight || window.innerHeight;
+          renderer.setSize(width, height, false);
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+        }
+        window.addEventListener("resize", resize);
+        resize();
+
+        window.__manualSetStep = (step) => {
+          activeStep = step;
+        };
+
+        function animate(now) {
+          requestAnimationFrame(animate);
+          const t = now * .001;
+          group.rotation.y = Math.sin(t * .22) * .22;
+          group.rotation.x = Math.sin(t * .18) * .05;
+          dots.rotation.y = t * .04;
+          dots.children.forEach((dot, i) => {
+            dot.position.y += Math.sin(t * dot.userData.speed + i) * .0008;
+          });
+          cards.forEach((card) => {
+            const isActive = card.userData.index === activeStep;
+            const pulse = isActive ? 1 + Math.sin(t * 4) * .035 : .9;
+            card.scale.setScalar(pulse);
+            card.position.copy(card.userData.base);
+            if (isActive) card.position.z += .55;
+            card.material.opacity = isActive ? 1 : .74;
+          });
+          renderer.render(scene, camera);
+        }
+        requestAnimationFrame(animate);
+      } catch (error) {
+        console.warn("Three.js manual scene failed", error);
+      }
+    }
+
+    initThree();
+  </script>
+</body>
+</html>
