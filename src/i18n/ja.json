@@ -176,6 +176,10 @@
     "noResultsWithCategory": "このカテゴリでは見つかりません。すべてのカテゴリに戻すと見つかるかもしれません。",
     "showAllCategories": "すべて表示",
     "variableProgress": "{{current}} / {{total}}",
+    "sortLabel": "並び順",
+    "sortManual": "手動順",
+    "sortFrequency": "よく使う順",
+    "sortRecent": "最近使った順",
     "hintClose": "閉じる",
     "hintNavigate": "選択",
     "hintSelect": "決定"

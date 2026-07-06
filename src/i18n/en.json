@@ -176,6 +176,10 @@
     "noResultsWithCategory": "Nothing was found in this category. Showing all categories may help.",
     "showAllCategories": "Show all",
     "variableProgress": "{{current}} / {{total}}",
+    "sortLabel": "Sort order",
+    "sortManual": "Manual",
+    "sortFrequency": "Most used",
+    "sortRecent": "Recent",
     "hintClose": "Close",
     "hintNavigate": "Navigate",
     "hintSelect": "Select"

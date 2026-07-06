@@ -5,16 +5,26 @@ import Fuse, { type FuseResultMatch } from "fuse.js";
 import type { TemplateWithTags, VariableFormField, Category } from "../types";
 import { ICON_MAP, CategoryIcon } from "./CategoryIcon";
 import {
-  listTemplatesByFrequency,
+  listLauncherTemplates,
   listCategories,
   recordTemplateUse,
   getTemplateFormSchema,
   interpolateTemplate,
   appendVariableOption,
   pasteTemplate,
+  getSetting,
+  setSetting,
+  type LauncherSortMode,
 } from "../desktop";
 
 const UNCATEGORIZED = "__uncategorized__";
+const SORT_MODE_SETTING_KEY = "launcher_sort_mode";
+const SORT_MODES: LauncherSortMode[] = ["manual", "frequency", "recent"];
+const SORT_LABEL_KEYS: Record<LauncherSortMode, string> = {
+  manual: "launcher.sortManual",
+  frequency: "launcher.sortFrequency",
+  recent: "launcher.sortRecent",
+};
 const LAUNCHER_WIDTH = 600;
 const LAUNCHER_MIN_HEIGHT = 420;
 const LAUNCHER_MAX_HEIGHT = 640;
@@ -65,6 +75,9 @@ export default function Launcher() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
+  // Sort mode (persisted; null until loaded from settings)
+  const [sortMode, setSortMode] = useState<LauncherSortMode | null>(null);
+
   // Variable input state
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateWithTags | null>(null);
   const [formFields, setFormFields] = useState<VariableFormField[]>([]);
@@ -110,8 +123,9 @@ export default function Launcher() {
   }, []);
 
   const loadTemplates = useCallback(async () => {
+    if (!sortMode) return;
     setLoadError(null);
-    const tplRes = await listTemplatesByFrequency();
+    const tplRes = await listLauncherTemplates(sortMode);
     const catRes = await listCategories();
     if (!tplRes.ok || !catRes.ok) {
       setLoadError(t("launcher.loadFailed"));
@@ -126,7 +140,20 @@ export default function Launcher() {
     setResults(list);
     fuseRef.current = new Fuse(list, fuseOptions);
     setCategories(catRes.data ?? []);
-  }, [t]);
+  }, [t, sortMode]);
+
+  // Load persisted sort mode once, then loadTemplates fires via its dependency
+  useEffect(() => {
+    getSetting(SORT_MODE_SETTING_KEY).then((res) => {
+      const v = res.ok ? res.data : null;
+      setSortMode(v === "frequency" || v === "recent" ? v : "manual");
+    });
+  }, []);
+
+  const changeSortMode = useCallback((mode: LauncherSortMode) => {
+    setSortMode(mode);
+    void setSetting(SORT_MODE_SETTING_KEY, mode);
+  }, []);
 
   useEffect(() => {
     loadTemplates();
@@ -532,6 +559,18 @@ export default function Launcher() {
                 {t("launcher.selectedHint", { title: displayedResults[selectedIndex].title })}
               </span>
             )}
+            <div className="launcher-sort" role="group" aria-label={t("launcher.sortLabel")}>
+              {SORT_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`launcher-sort-btn ${sortMode === mode ? "active" : ""}`}
+                  onClick={() => changeSortMode(mode)}
+                >
+                  {t(SORT_LABEL_KEYS[mode])}
+                </button>
+              ))}
+            </div>
           </div>
           {displayedResults.length === 0 && (
             <div className="launcher-empty">

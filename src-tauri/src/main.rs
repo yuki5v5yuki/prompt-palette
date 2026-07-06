@@ -157,7 +157,7 @@ fn main() {
             commands::update_template,
             commands::delete_template,
             commands::record_template_use,
-            commands::list_templates_by_frequency,
+            commands::list_launcher_templates,
             // Variables
             commands::list_variables,
             commands::create_variable,

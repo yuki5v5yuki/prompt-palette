@@ -695,9 +695,9 @@ export default function TemplateList() {
         const otherCats = prev.filter((c) => !categoryIds.includes(`cat-${c.id}`));
         return [...reorderedCats, ...otherCats];
       });
-      for (let i = 0; i < reorderedCats.length; i++) {
-        updateCategory(reorderedCats[i].id, { sortOrder: i });
-      }
+      await Promise.all(
+        reorderedCats.map((cat, i) => updateCategory(cat.id, { sortOrder: i }))
+      );
       notifyLauncher();
       return;
     }
@@ -747,9 +747,9 @@ export default function TemplateList() {
           }
           return updated.sort((a, b) => a.sortOrder - b.sortOrder);
         });
-        for (let i = 0; i < reordered.length; i++) {
-          updateTemplate(reordered[i].id, { sortOrder: i });
-        }
+        await Promise.all(
+          reordered.map((tpl, i) => updateTemplate(tpl.id, { sortOrder: i }))
+        );
         notifyLauncher();
         return;
       }
@@ -790,6 +790,8 @@ export default function TemplateList() {
         sortOrder: targetInsertIndex,
       });
 
+      const persists: Promise<unknown>[] = [];
+
       // Persist: renumber target category
       const targetGroup = groups.find((g) => (g.category?.id ?? null) === targetCatId);
       if (targetGroup) {
@@ -797,7 +799,7 @@ export default function TemplateList() {
         targetTpls.splice(targetInsertIndex, 0, activeTpl);
         for (let i = 0; i < targetTpls.length; i++) {
           if (targetTpls[i].id !== activeTplId) {
-            updateTemplate(targetTpls[i].id, { sortOrder: i });
+            persists.push(updateTemplate(targetTpls[i].id, { sortOrder: i }));
           }
         }
       }
@@ -807,9 +809,10 @@ export default function TemplateList() {
       if (sourceGroup) {
         const sourceTpls = sourceGroup.templates.filter((t) => t.id !== activeTplId);
         for (let i = 0; i < sourceTpls.length; i++) {
-          updateTemplate(sourceTpls[i].id, { sortOrder: i });
+          persists.push(updateTemplate(sourceTpls[i].id, { sortOrder: i }));
         }
       }
+      await Promise.all(persists);
       notifyLauncher();
     }
   }, [categoryIds, categories, templates, groups, sortMode, notifyLauncher]);

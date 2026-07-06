@@ -326,6 +326,7 @@ body {
 
 .launcher-status {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 6px 10px 8px;
@@ -336,9 +337,44 @@ body {
 
 .launcher-status-selected {
   min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ─── Sort Mode Toggle ─── */
+
+.launcher-sort {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.launcher-sort-btn {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-normal);
+}
+
+.launcher-sort-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-glow);
+}
+
+.launcher-sort-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1a00;
+  font-weight: 600;
 }
 
 /* ─── Keyboard Hints ─── */

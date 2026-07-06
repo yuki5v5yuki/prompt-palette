@@ -123,8 +123,10 @@ export const deleteTemplate = (id: string) =>
 export const recordTemplateUse = (id: string) =>
   invokeCommand<void>("record_template_use", { id });
 
-export const listTemplatesByFrequency = () =>
-  invokeCommand<TemplateWithTags[]>("list_templates_by_frequency");
+export type LauncherSortMode = "manual" | "frequency" | "recent";
+
+export const listLauncherTemplates = (sortMode: LauncherSortMode) =>
+  invokeCommand<TemplateWithTags[]>("list_launcher_templates", { sortMode });
 
 // --- Variable Packages ---
 

@@ -611,16 +611,27 @@ pub fn record_template_use(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
-/// List templates sorted by frequency (for launcher initial display).
+/// List templates for the launcher.
+/// sort_mode: "manual" (default) mirrors the admin panel order
+/// (category sort_order → template sort_order → title),
+/// "frequency" = most used first, "recent" = most recently used first.
 #[tauri::command]
-pub fn list_templates_by_frequency(app: AppHandle) -> Result<Vec<TemplateWithTags>, String> {
+pub fn list_launcher_templates(app: AppHandle, sort_mode: Option<String>) -> Result<Vec<TemplateWithTags>, String> {
     let conn = db::open(&app)?;
+    let order_by = match sort_mode.as_deref() {
+        Some("frequency") => "t.use_count DESC, t.last_used_at DESC NULLS LAST, t.sort_order, t.title",
+        Some("recent") => "t.last_used_at DESC NULLS LAST, t.use_count DESC, t.sort_order, t.title",
+        // Uncategorized templates go last, matching the admin panel grouping
+        _ => "(t.category_id IS NULL), c.sort_order, c.name, t.sort_order, t.title",
+    };
+    let sql = format!(
+        "SELECT t.id, t.title, t.body, t.category_id, t.hotkey, t.use_count, t.last_used_at, t.sort_order, t.created_at, t.updated_at
+         FROM templates t
+         LEFT JOIN categories c ON c.id = t.category_id
+         ORDER BY {order_by}"
+    );
     let mut stmt = conn
-        .prepare(
-            "SELECT id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at
-             FROM templates
-             ORDER BY use_count DESC, last_used_at DESC NULLS LAST",
-        )
+        .prepare(&sql)
         .map_err(|e| e.to_string())?;
     let templates: Vec<Template> = stmt
         .query_map([], row_to_template)
