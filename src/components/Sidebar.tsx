@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { emitTo } from "@tauri-apps/api/event";
 import { FileText, Tag, Variable, ArrowUpDown, Settings, type LucideIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { fallbackAppVersion, getDisplayAppVersion } from "../appVersion";
 import { setSetting } from "../desktop";
 
 export type NavTab = "templates" | "tags" | "packages" | "importExport" | "settings";
@@ -12,6 +14,11 @@ interface SidebarProps {
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const { t, i18n } = useTranslation();
+  const [appVersion, setAppVersion] = useState(fallbackAppVersion);
+
+  useEffect(() => {
+    void getDisplayAppVersion().then(setAppVersion);
+  }, []);
 
   const tabs: { key: NavTab; label: string; icon: LucideIcon }[] = [
     { key: "templates", label: t("nav.templates"), icon: FileText },
@@ -25,7 +32,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     <aside className="sidebar">
       <div className="sidebar-header">
         <h1 className="sidebar-title">{t("app.name")}</h1>
-        <span className="sidebar-version">{t("app.version")}</span>
+        <span className="sidebar-version">{appVersion}</span>
       </div>
 
       <nav className="sidebar-nav">

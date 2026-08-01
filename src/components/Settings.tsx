@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { emitTo } from "@tauri-apps/api/event";
+import { fallbackAppVersion, getDisplayAppVersion } from "../appVersion";
 import { getSetting, setSetting, setGlobalHotkey } from "../desktop";
 
 /** Convert a KeyboardEvent.code to a Tauri-compatible key name */
@@ -92,6 +93,7 @@ function applyFontSize(size: FontSize) {
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
+  const [appVersion, setAppVersion] = useState(fallbackAppVersion);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     return (localStorage.getItem("themeMode") as ThemeMode) || "system";
   });
@@ -106,6 +108,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const recorderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    void getDisplayAppVersion().then(setAppVersion);
+  }, []);
 
   useEffect(() => {
     applyTheme(themeMode);
@@ -326,7 +332,7 @@ export default function Settings() {
         <div className="settings-section">
           <h3 className="settings-section-title">{t("settings.about")}</h3>
           <div className="settings-about">
-            <p><strong>{t("app.name")}</strong> {t("app.version")}</p>
+            <p><strong>{t("app.name")}</strong> {appVersion}</p>
             <p className="settings-hint">{t("app.description")}</p>
           </div>
         </div>

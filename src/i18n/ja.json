@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Prompt Palette",
-    "version": "v0.1.0",
     "description": "どこでも使えるテキスト挿入ランチャー",
     "dataLoadFailed": "データベースに接続できませんでした。アプリを再起動するか、サポートに連絡してください。",
     "retryLoad": "再試行"

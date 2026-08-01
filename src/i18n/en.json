@@ -1,7 +1,6 @@
 {
   "app": {
     "name": "Prompt Palette",
-    "version": "v0.1.0",
     "description": "Global text insertion launcher",
     "dataLoadFailed": "Could not connect to the database. Try restarting the app or contact support.",
     "retryLoad": "Retry"
