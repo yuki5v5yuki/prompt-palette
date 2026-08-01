@@ -616,11 +616,25 @@ pub fn record_template_use(app: AppHandle, id: String) -> Result<(), String> {
 /// (category sort_order → template sort_order → title),
 /// "frequency" = most used first, "recent" = most recently used first.
 #[tauri::command]
-pub fn list_launcher_templates(app: AppHandle, sort_mode: Option<String>) -> Result<Vec<TemplateWithTags>, String> {
+pub fn list_launcher_templates(
+    app: AppHandle,
+    sort_mode: Option<String>,
+) -> Result<Vec<TemplateWithTags>, String> {
     let conn = db::open(&app)?;
-    let order_by = match sort_mode.as_deref() {
-        Some("frequency") => "t.use_count DESC, t.last_used_at DESC NULLS LAST, t.sort_order, t.title",
-        Some("recent") => "t.last_used_at DESC NULLS LAST, t.use_count DESC, t.sort_order, t.title",
+    query_launcher_templates(&conn, sort_mode.as_deref())
+}
+
+fn query_launcher_templates(
+    conn: &rusqlite::Connection,
+    sort_mode: Option<&str>,
+) -> Result<Vec<TemplateWithTags>, String> {
+    let order_by = match sort_mode {
+        Some("frequency") => {
+            "t.use_count DESC, t.last_used_at DESC NULLS LAST, t.sort_order, t.title"
+        }
+        Some("recent") => {
+            "t.last_used_at DESC NULLS LAST, t.use_count DESC, t.sort_order, t.title"
+        }
         // Uncategorized templates go last, matching the admin panel grouping
         _ => "(t.category_id IS NULL), c.sort_order, c.name, t.sort_order, t.title",
     };
@@ -641,7 +655,7 @@ pub fn list_launcher_templates(app: AppHandle, sort_mode: Option<String>) -> Res
 
     let mut result = Vec::with_capacity(templates.len());
     for t in templates {
-        let tags = get_tags_for_template(&conn, &t.id)?;
+        let tags = get_tags_for_template(conn, &t.id)?;
         result.push(TemplateWithTags { template: t, tags });
     }
     Ok(result)
@@ -1428,4 +1442,84 @@ pub fn set_global_hotkey(app: AppHandle, shortcut: String) -> Result<(), String>
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::query_launcher_templates;
+    use rusqlite::Connection;
+
+    fn launcher_test_connection() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        for migration in crate::migrations::get_migrations() {
+            migration(&conn).unwrap();
+        }
+        conn.execute_batch(
+            "PRAGMA foreign_keys = ON;
+
+             INSERT INTO categories (id, name, icon, color, sort_order) VALUES
+               ('cat-first', 'First', NULL, NULL, 10),
+               ('cat-later', 'Later', NULL, NULL, 20);
+
+             INSERT INTO templates
+               (id, title, body, category_id, hotkey, use_count, last_used_at, sort_order, created_at, updated_at)
+             VALUES
+               ('first-alpha', 'Alpha', 'body', 'cat-first', NULL, 4, '2026-07-03T00:00:00Z', 0, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z'),
+               ('first-beta', 'Beta', 'body', 'cat-first', NULL, 2, '2026-07-01T00:00:00Z', 0, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z'),
+               ('first-second', 'Aardvark', 'body', 'cat-first', NULL, 3, '2026-07-03T00:00:00Z', 1, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z'),
+               ('later', 'Later', 'body', 'cat-later', NULL, 10, NULL, -5, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z'),
+               ('uncategorized', 'Aaa', 'body', NULL, NULL, 10, '2026-07-04T00:00:00Z', -100, '2026-07-01T00:00:00Z', '2026-07-01T00:00:00Z');",
+        )
+        .unwrap();
+        conn
+    }
+
+    fn launcher_ids(conn: &Connection, sort_mode: Option<&str>) -> Vec<String> {
+        query_launcher_templates(conn, sort_mode)
+            .unwrap()
+            .into_iter()
+            .map(|template| template.template.id)
+            .collect()
+    }
+
+    #[test]
+    fn launcher_templates_default_to_manual_admin_order() {
+        let conn = launcher_test_connection();
+        let expected = vec![
+            "first-alpha",
+            "first-beta",
+            "first-second",
+            "later",
+            "uncategorized",
+        ];
+
+        assert_eq!(launcher_ids(&conn, None), expected);
+        assert_eq!(launcher_ids(&conn, Some("manual")), expected);
+    }
+
+    #[test]
+    fn launcher_templates_support_frequency_and_recent_order() {
+        let conn = launcher_test_connection();
+
+        assert_eq!(
+            launcher_ids(&conn, Some("frequency")),
+            vec![
+                "uncategorized",
+                "later",
+                "first-alpha",
+                "first-second",
+                "first-beta",
+            ]
+        );
+        assert_eq!(
+            launcher_ids(&conn, Some("recent")),
+            vec![
+                "uncategorized",
+                "first-alpha",
+                "first-second",
+                "first-beta",
+                "later",
+            ]
+        );
+    }
 }
